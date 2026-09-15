@@ -291,18 +291,20 @@ zCells = arrayfun(@(lvl) lvl.samples2D, levelsOut, 'UniformOutput', false);
 gCells = arrayfun(@(lvl) lvl.g(:), levelsOut, 'UniformOutput', false);
 zAll = vertcat(zCells{:});
 gAll = vertcat(gCells{:});
+[zUnique, ~, groupIdx] = unique(zAll, 'rows', 'stable');
+gUnique = accumarray(groupIdx, gAll, [], @mean);
 
-if size(zAll, 1) < 3 || numel(unique(zAll(:, 1))) < 2 || numel(unique(zAll(:, 2))) < 2
+if size(zUnique, 1) < 3 || numel(unique(zUnique(:, 1))) < 2 || numel(unique(zUnique(:, 2))) < 2
     xGrid = [];
     yGrid = [];
     gGrid = [];
     return;
 end
 
-xMin = min(zAll(:, 1));
-xMax = max(zAll(:, 1));
-yMin = min(zAll(:, 2));
-yMax = max(zAll(:, 2));
+xMin = min(zUnique(:, 1));
+xMax = max(zUnique(:, 1));
+yMin = min(zUnique(:, 2));
+yMax = max(zUnique(:, 2));
 
 xPad = 0.05 * max(xMax - xMin, 1);
 yPad = 0.05 * max(yMax - yMin, 1);
@@ -311,7 +313,7 @@ xv = linspace(xMin - xPad, xMax + xPad, gridSize);
 yv = linspace(yMin - yPad, yMax + yPad, gridSize);
 [xGrid, yGrid] = meshgrid(xv, yv);
 
-F = scatteredInterpolant(zAll(:, 1), zAll(:, 2), gAll, 'natural', 'none');
+F = scatteredInterpolant(zUnique(:, 1), zUnique(:, 2), gUnique, 'natural', 'none');
 gGrid = F(xGrid, yGrid);
 end
 

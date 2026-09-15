@@ -367,7 +367,7 @@ end
 function subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff)
 subsetLevels = struct();
 subsetLevels.version = '1.0';
-subsetLevels.createdAt = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
+subsetLevels.createdAt = char(datetime('now', 'TimeZone', 'UTC', 'Format', 'yyyy-MM-dd''T''HH:mm:ssXXX'));
 subsetLevels.failureDefinition = 'g(x) <= 0';
 subsetLevels.Pf = Pf;
 subsetLevels.beta = beta;
