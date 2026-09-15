@@ -310,7 +310,9 @@ if fid <= 0
     error('Nao foi possivel criar o relatorio final: %s', f_out_txt);
 end
 cleanupObj = onCleanup(@() safeCloseFile(fid)); %#ok<NASGU>
-methodWidth = max(32, max(strlength(Tfinal.Method)) + 2);
+methodNames = string(Tfinal.Method);
+methodNames(ismissing(methodNames)) = "";
+methodWidth = max(32, max(strlength(methodNames)) + 2);
 
 fprintf(fid, 'RELATORIO FINAL DE CONFIABILIDADE\n');
 fprintf(fid, '=================================\n\n');

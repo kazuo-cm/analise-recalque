@@ -176,7 +176,8 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
         return;
     end
 
-    Xstd = local_standardize(Xall);
+    finiteRows = all(isfinite(Xall), 2);
+    Xpca = Xall(finiteRows, :);
     hasPCA = (exist('pca', 'file') == 2) || (exist('pca', 'builtin') == 5);
     if ~hasPCA
         idx = local_pick_most_influential_dims(Xall, gall);
@@ -185,25 +186,34 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
             'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
         return;
     end
-    if size(Xstd, 1) < 2
+    if size(Xpca, 1) < 2
         idx = local_pick_most_influential_dims(Xall, gall);
         [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential-fallback');
-        projInfo.description = sprintf(['PCA sem amostras suficientes, projeção de fallback ' ...
+        projInfo.description = sprintf(['PCA sem amostras finitas suficientes, projeção de fallback ' ...
             'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
         return;
     end
 
+    [Xstd, mu, sg] = local_standardize(Xpca);
     [coeff, score] = pca(Xstd, 'NumComponents', 2);
+    if size(coeff, 2) < 2 || size(score, 2) < 2
+        idx = local_pick_most_influential_dims(Xall, gall);
+        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential-fallback');
+        projInfo.description = sprintf(['PCA com posto insuficiente, projeção de fallback ' ...
+            'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
+        return;
+    end
     ZLevels = cell(nLevels, 1);
     gLevels = cell(nLevels, 1);
     labels = cell(nLevels, 1);
-    i0 = 0;
     for k = 1:nLevels
-        nk = size(LD(k).X, 1);
-        ZLevels{k} = score(i0 + (1:nk), 1:2);
+        Xk = LD(k).X;
+        XkStd = bsxfun(@rdivide, bsxfun(@minus, Xk, mu), sg);
+        bad = any(~isfinite(XkStd), 2);
+        XkStd(bad, :) = NaN;
+        ZLevels{k} = XkStd * coeff(:, 1:2);
         gLevels{k} = LD(k).g(:);
         labels{k} = sprintf('SS-%d (b=%.3g)', LD(k).level, LD(k).threshold);
-        i0 = i0 + nk;
     end
     expVar = 100 * var(score(:, 1:2), 0, 1) ./ max(sum(var(Xstd, 0, 1)), eps);
     projInfo = struct();
@@ -217,7 +227,7 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     projInfo.loadings = coeff;
 end
 
-function Xs = local_standardize(X)
+function [Xs, mu, sg] = local_standardize(X)
     mu = mean(X, 1, 'omitnan');
     sg = std(X, 0, 1, 'omitnan');
     sg(~isfinite(sg) | sg <= 0) = 1;

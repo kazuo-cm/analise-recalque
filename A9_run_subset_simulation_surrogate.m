@@ -138,7 +138,10 @@ function myInput = local_resolve_input_model(S, opts)
             error('A9_run_subset_simulation_surrogate:InvalidMoments', ...
                 'opts.muX e opts.sigmaX devem ter o mesmo numero de elementos.');
         end
-        sg(~isfinite(sg) | sg <= 0) = 1e-6;
+        if any(~isfinite(sg) | sg <= 0)
+            error('A9_run_subset_simulation_surrogate:InvalidMoments', ...
+                'opts.sigmaX contem valores invalidos (todos devem ser finitos e > 0).');
+        end
         myInput = struct();
         myInput.Marginals = repmat(struct('Type', 'Gaussian', 'Parameters', [0 1]), 1, numel(mu));
         for k = 1:numel(mu)
