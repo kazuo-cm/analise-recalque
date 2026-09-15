@@ -34,7 +34,13 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
     validateattributes(Lmax, {'numeric'}, {'scalar', 'integer', '>=', 1}, mfilename, 'opts.maxLevels');
     validateattributes(sProp, {'numeric'}, {'scalar', 'positive'}, mfilename, 'opts.proposalScale');
 
-    nKeep = max(1, round(p0 * N));
+    nKeepFloat = p0 * N;
+    nKeep = round(nKeepFloat);
+    if abs(nKeepFloat - nKeep) > 1e-10
+        error('A9_subset_simulation_pf:InvalidSubsetFraction', ...
+            'Escolha opts.p0 e opts.N tais que p0*N seja inteiro. Recebido: %.12g.', nKeepFloat);
+    end
+    nKeep = max(1, nKeep);
     p0 = nKeep / N;
 
     M = numel(myInput.Marginals);

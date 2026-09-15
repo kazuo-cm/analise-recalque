@@ -665,12 +665,15 @@ function local_plot_pf_history(T_hist)
     plotted = false;
     maskHat = isfinite(pfHat) & (pfHat > 0);
     maskSS = isfinite(pfSS) & (pfSS > 0);
-    if any(maskHat)
-        semilogy(iter(maskHat), pfHat(maskHat), '-o', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{hat}');
+    maskIter = isfinite(iter);
+    mask = maskHat & maskIter;
+    if any(mask)
+        semilogy(iter(mask), pfHat(mask), '-o', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{hat}');
         plotted = true;
     end
-    if any(maskSS)
-        semilogy(iter(maskSS), pfSS(maskSS), '-s', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{SS}');
+    mask = maskSS & maskIter;
+    if any(mask)
+        semilogy(iter(mask), pfSS(mask), '-s', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{SS}');
         plotted = true;
     end
     grid on;
@@ -698,22 +701,34 @@ function local_plot_quality_history(T_hist)
 
     hasR2 = any(isfinite(r2best));
     hasLoo = any(isfinite(loobest));
+    maskIter = isfinite(iter);
 
     if hasR2
-        yyaxis left;
-        plot(iter, r2best, '-o', 'LineWidth', 1.4, 'MarkerSize', 5, 'Color', [0 0.45 0.74]);
-        ylabel('R2_{best}');
+        maskR2 = maskIter & isfinite(r2best);
+        if any(maskR2)
+            yyaxis left;
+            plot(iter(maskR2), r2best(maskR2), '-o', 'LineWidth', 1.4, 'MarkerSize', 5, 'Color', [0 0.45 0.74]);
+            ylabel('R2_{best}');
+        else
+            hasR2 = false;
+        end
     end
     if hasLoo
-        yyaxis right;
-        plot(iter, loobest, '-s', 'LineWidth', 1.4, 'MarkerSize', 5, 'Color', [0.85 0.33 0.1]);
-        ylabel('LOO_{best}');
+        maskLoo = maskIter & isfinite(loobest);
+        if any(maskLoo)
+            yyaxis right;
+            plot(iter(maskLoo), loobest(maskLoo), '-s', 'LineWidth', 1.4, 'MarkerSize', 5, 'Color', [0.85 0.33 0.1]);
+            ylabel('LOO_{best}');
+        else
+            hasLoo = false;
+        end
     end
 
     grid on;
     xlabel('Iteracao AL');
 
     if ~(hasR2 || hasLoo)
+        axis off;
         text(0.5, 0.5, 'Series R2_best/LOO_best indisponiveis', 'Units', 'normalized', ...
             'HorizontalAlignment', 'center');
     end
