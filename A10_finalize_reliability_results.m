@@ -659,7 +659,7 @@ if abs(pfRef) < eps
         relErrPct = Inf;
     end
 else
-    relErrPct = 100 * safeDivide(absErr, pfRef);
+    relErrPct = 100 * safeDivide(absErr, abs(pfRef));
 end
 end
 
