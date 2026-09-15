@@ -182,11 +182,11 @@ Tfinal = table( ...
 writetable(Tfinal, f_out_csv);
 
 %% Supporting stage 4 diagnostics
-finalStatus = string(getFirstTableValue(Tstage4rep, {'FinalStatus','Status'}));
+finalStatus = string(getFirstTableValue(Tstage4rep, {'FinalStatus','Status'}, true));
 nIterStage4 = getFirstTableValue(Tstage4rep, {'N_Iterations','NIterations','nIter','Iterations'});
 Pf_hat_final = getFirstTableValue(Tstage4rep, {'Pf_hat_final','Pf_hat','PfHatFinal'});
 Pf_SS_final = getFirstTableValue(Tstage4rep, {'Pf_SS_final','Pf_SS','PfSSFinal'});
-bestMethod4 = string(getFirstTableValue(Tstage4rep, {'bestMethod','BestMethod','Method'}));
+bestMethod4 = string(getFirstTableValue(Tstage4rep, {'bestMethod','BestMethod','Method'}, true));
 nVars4 = getFirstTableValue(Tstage4rep, {'nVars','NVars','n_variables'});
 
 [histIter, colHistIter] = getHistoryVector(Tstage4hist, {'AL_iter','Iter','Iteration','ALIteration'});
@@ -538,16 +538,27 @@ if ~isempty(methodCol) && ~isempty(valueCol)
 end
 end
 
-function value = getFirstTableValue(T, candidates)
+function value = getFirstTableValue(T, candidates, asText)
+if nargin < 3
+    asText = false;
+end
 value = NaN;
 col = findColumnName(T, candidates);
 if isempty(col)
+    if asText
+        value = "";
+    end
     return;
 end
-value = firstNumericFromArray(T.(col));
-if isnan(value)
+if asText
     raw = T.(col);
     value = string(raw(1));
+    return;
+end
+
+value = firstNumericFromArray(T.(col));
+if isnan(value)
+    value = NaN;
 end
 end
 

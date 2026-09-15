@@ -177,7 +177,8 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     end
 
     Xstd = local_standardize(Xall);
-    if exist('pca', 'file') ~= 2
+    hasPCA = (exist('pca', 'file') == 2) || (exist('pca', 'builtin') == 5);
+    if ~hasPCA
         idx = local_pick_most_influential_dims(Xall, gall);
         [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential-fallback');
         projInfo.description = sprintf(['PCA indisponível, projeção de fallback ' ...

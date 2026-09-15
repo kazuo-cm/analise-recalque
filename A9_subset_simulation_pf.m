@@ -59,6 +59,7 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
     end
 
     bLevels = nan(Lmax, 1);
+    pLastAtTermination = NaN;
     if recordDiagnostics
         levelDiagnostics = repmat(struct('level', [], 'threshold', [], 'U', [], 'X', [], ...
             'g', [], 'nSamples', [], 'nConditional', []), Lmax, 1);
@@ -78,6 +79,7 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
 
         if b <= 0
             failReached = true;
+            pLastAtTermination = mean(g <= 0);
             break;
         end
 
@@ -166,7 +168,11 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
     end
 
     nLevels = level;
-    pLast = mean(g <= 0);
+    if failReached && isfinite(pLastAtTermination)
+        pLast = pLastAtTermination;
+    else
+        pLast = mean(g <= 0);
+    end
     nIntermediate = max(nLevels - 1, 0);
     if ~failReached
         nIntermediate = nLevels;
