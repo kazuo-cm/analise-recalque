@@ -594,7 +594,8 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
 end
 
 function txt = local_sanitize_user_text(txt)
-    txt = regexprep(char(txt), '\<A6([_\\- ]*)', '');
+    txt = regexprep(char(txt), '\<A6[A-Za-z0-9_\\-]*\>', '');
+    txt = regexprep(txt, '(^|[[:space:]])[_\\-]+([[:space:]]|$)', '$1$2');
     txt = strtrim(txt);
 end
 
@@ -626,11 +627,12 @@ function local_plot_method_metric(methods, values, xlab, useLog)
     y = 1:numel(methods);
     good = isfinite(values);
     if any(good)
-        plot(values(good), y(good), 'o-', 'LineWidth', 1.5, 'MarkerSize', 8, ...
+        yPlot = y(good);
+        plot(values(good), yPlot, 'o-', 'LineWidth', 1.5, 'MarkerSize', 8, ...
             'Color', [0.1 0.35 0.75], 'MarkerFaceColor', [0.1 0.35 0.75]);
         grid on;
         set(gca, 'YDir', 'reverse');
-        set(gca, 'YTick', y, 'YTickLabel', string(methods));
+        set(gca, 'YTick', yPlot, 'YTickLabel', string(methods(good)));
         xlabel(xlab);
         if useLog
             set(gca, 'XScale', 'log');

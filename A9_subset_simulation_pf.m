@@ -111,26 +111,12 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
         end
 
         if c < N
-            Unew = Unew(1:c, :);
-            gnew = gnew(1:c);
-
-            kk = N - c;
-            rep = min(kk, size(Useed, 1));
-            Unew = [Unew; Useed(1:rep, :)]; %#ok<AGROW>
-            gtmp = gfunX(u2x(Useed(1:rep, :)));
-            gnew = [gnew; gtmp(:)]; %#ok<AGROW>
-
-            if size(Unew, 1) < N
-                add = N - size(Unew, 1);
-                Uadd = randn(add, M);
-                gadd = gfunX(u2x(Uadd));
-                Unew = [Unew; Uadd]; %#ok<AGROW>
-                gnew = [gnew; gadd(:)]; %#ok<AGROW>
-            end
+            error('A9_subset_simulation_pf:ChainFillFailed', ...
+                'Numero insuficiente de amostras condicionais geradas no nivel %d.', level);
         end
 
-        U = Unew;
-        g = gnew;
+        U = Unew(1:N, :);
+        g = gnew(1:N);
     end
 
     nLevels = level;
@@ -138,7 +124,15 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
     Pf = (p0 ^ max(nLevels - 1, 0)) * pLast;
     Pf = max(min(Pf, 1 - 1e-15), 1e-15);
     beta = local_beta_from_pf(Pf);
-    CoV = sqrt((1 - p0) / (N * p0) * max(nLevels - 1, 1));
+    if nLevels <= 1
+        if pLast > 0
+            CoV = sqrt(max(1 - pLast, 0) / (N * pLast));
+        else
+            CoV = NaN;
+        end
+    else
+        CoV = sqrt((1 - p0) / (N * p0) * (nLevels - 1));
+    end
 
     outSS = struct();
     outSS.Pf = Pf;
