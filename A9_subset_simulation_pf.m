@@ -1,0 +1,173 @@
+function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
+% A9_SUBSET_SIMULATION_PF
+% Estima Pf = P[g(X)<=0] via Subset Simulation (Au & Beck, 2001).
+
+    if nargin < 2
+        error('A9_subset_simulation_pf:NotEnoughInputs', ...
+            'Forneca gfunX e myInput.');
+    end
+    if nargin < 3 || isempty(opts)
+        opts = struct();
+    end
+
+    if ~isfield(opts, 'N') || isempty(opts.N), opts.N = 1000; end
+    if ~isfield(opts, 'p0') || isempty(opts.p0), opts.p0 = 0.10; end
+    if ~isfield(opts, 'maxLevels') || isempty(opts.maxLevels), opts.maxLevels = 10; end
+    if ~isfield(opts, 'proposalScale') || isempty(opts.proposalScale), opts.proposalScale = 0.8; end
+    if isfield(opts, 'seed') && ~isempty(opts.seed)
+        rng(opts.seed, 'twister');
+    end
+
+    validateattributes(gfunX, {'function_handle'}, {'scalar'}, mfilename, 'gfunX', 1);
+    if ~isstruct(myInput) || ~isfield(myInput, 'Marginals') || isempty(myInput.Marginals)
+        error('A9_subset_simulation_pf:InvalidInput', ...
+            'myInput.Marginals deve conter as marginais Gaussianas.');
+    end
+
+    N = opts.N;
+    p0 = opts.p0;
+    Lmax = opts.maxLevels;
+    sProp = opts.proposalScale;
+
+    validateattributes(N, {'numeric'}, {'scalar', 'integer', '>=', 10}, mfilename, 'opts.N');
+    validateattributes(p0, {'numeric'}, {'scalar', '>', 0, '<', 1}, mfilename, 'opts.p0');
+    validateattributes(Lmax, {'numeric'}, {'scalar', 'integer', '>=', 1}, mfilename, 'opts.maxLevels');
+    validateattributes(sProp, {'numeric'}, {'scalar', 'positive'}, mfilename, 'opts.proposalScale');
+
+    nKeep = max(1, round(p0 * N));
+    p0 = nKeep / N;
+
+    M = numel(myInput.Marginals);
+    u2x = @(U) local_u2x_gauss(U, myInput);
+
+    U = randn(N, M);
+    X = u2x(U);
+    g = gfunX(X);
+    g = g(:);
+
+    if numel(g) ~= N
+        error('A9_subset_simulation_pf:InvalidResponse', ...
+            'gfunX deve retornar um valor por linha de X.');
+    end
+
+    bLevels = nan(Lmax, 1);
+    level = 0;
+    failReached = false;
+
+    while level < Lmax
+        level = level + 1;
+
+        gs = sort(g, 'ascend');
+        b = gs(nKeep);
+        bLevels(level) = b;
+
+        if b <= 0
+            failReached = true;
+            break;
+        end
+
+        idxSeed = find(g <= b);
+        if numel(idxSeed) < nKeep
+            [~, ord] = sort(g, 'ascend');
+            idxSeed = ord(1:nKeep);
+        else
+            idxSeed = idxSeed(1:nKeep);
+        end
+
+        Useed = U(idxSeed, :);
+        gseed = g(idxSeed);
+
+        Unew = zeros(N, M);
+        gnew = zeros(N, 1);
+
+        chainLen = ceil(N / nKeep);
+        c = 0;
+        for i = 1:nKeep
+            uc = Useed(i, :);
+            gc = gseed(i);
+
+            for t = 1:chainLen
+                up = uc + sProp * randn(1, M);
+                gp = gfunX(u2x(up));
+                gp = gp(1);
+
+                if gp <= b
+                    uc = up;
+                    gc = gp;
+                end
+
+                c = c + 1;
+                if c <= N
+                    Unew(c, :) = uc;
+                    gnew(c, 1) = gc;
+                else
+                    break;
+                end
+            end
+
+            if c >= N
+                break;
+            end
+        end
+
+        if c < N
+            Unew = Unew(1:c, :);
+            gnew = gnew(1:c);
+
+            kk = N - c;
+            rep = min(kk, size(Useed, 1));
+            Unew = [Unew; Useed(1:rep, :)]; %#ok<AGROW>
+            gtmp = gfunX(u2x(Useed(1:rep, :)));
+            gnew = [gnew; gtmp(:)]; %#ok<AGROW>
+
+            if size(Unew, 1) < N
+                add = N - size(Unew, 1);
+                Uadd = randn(add, M);
+                gadd = gfunX(u2x(Uadd));
+                Unew = [Unew; Uadd]; %#ok<AGROW>
+                gnew = [gnew; gadd(:)]; %#ok<AGROW>
+            end
+        end
+
+        U = Unew;
+        g = gnew;
+    end
+
+    nLevels = level;
+    pLast = mean(g <= 0);
+    Pf = (p0 ^ max(nLevels - 1, 0)) * pLast;
+    Pf = max(min(Pf, 1 - 1e-15), 1e-15);
+    beta = local_beta_from_pf(Pf);
+    CoV = sqrt((1 - p0) / (N * p0) * max(nLevels - 1, 1));
+
+    outSS = struct();
+    outSS.Pf = Pf;
+    outSS.beta = beta;
+    outSS.CoV = CoV;
+    outSS.nLevels = nLevels;
+    outSS.bLevels = bLevels(1:nLevels);
+    outSS.p0 = p0;
+    outSS.N = N;
+    outSS.failReached = failReached;
+    outSS.pLast = pLast;
+end
+
+function X = local_u2x_gauss(U, myInput)
+    [N, M] = size(U);
+    X = zeros(N, M);
+    for k = 1:M
+        params = myInput.Marginals(k).Parameters;
+        if numel(params) < 2
+            error('A9_subset_simulation_pf:InvalidMarginal', ...
+                'Marginal %d deve ter [mu sigma].', k);
+        end
+        mu = params(1);
+        sg = params(2);
+        X(:, k) = mu + sg * U(:, k);
+    end
+end
+
+function beta = local_beta_from_pf(Pf)
+    Pf = max(min(Pf, 1 - 1e-15), 1e-15);
+    beta = -sqrt(2) * erfcinv(2 * Pf);
+end
