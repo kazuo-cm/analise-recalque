@@ -1,0 +1,266 @@
+function fig = A9_plot_subset_simulation_diagnostics(opts)
+% A9_PLOT_SUBSET_SIMULATION_DIAGNOSTICS
+% -------------------------------------------------------------------------
+% Reads A9_subset_simulation_levels.mat and produces a publication-style
+% 2D diagnostic plot for Subset Simulation.
+%
+% This figure is meant to explain, in dissertation language, how SS
+% progressively concentrates samples toward the failure region:
+%   - SS-1, SS-2, ... are the level-by-level sample clouds
+%   - each b_k line/label is an intermediate threshold g(x) <= b_k
+%   - the contour g(x) = 0 is the failure boundary
+%
+% Usage from the project root:
+%   A9_plot_subset_simulation_diagnostics();
+%   A9_plot_subset_simulation_diagnostics(struct( ...
+%       'backgroundColor', [1 1 1], ...
+%       'fontSize', 12, ...
+%       'titleFontSize', 16, ...
+%       'markerSize', 28, ...
+%       'lineWidth', 1.8));
+%
+% Optional fields in opts
+%   levelsFile        : defaults to C:\Kazuo-Script\out_incremental\A9_subset_simulation_levels.mat
+%   outputPng         : optional PNG export path
+%   projectionMethod  : 'auto' | 'pair' | 'pca'
+%   variablePair      : [i j] or {'x1','x2'} when projectionMethod='pair'
+%   backgroundColor   : figure background
+%   axesColor         : axes background
+%   fontName          : default 'Arial'
+%   fontSize          : default 12
+%   titleFontSize     : default 16
+%   labelFontSize     : default 13
+%   legendFontSize    : default 11
+%   markerSize        : default 28
+%   lineWidth         : default 1.8
+%   gridSize          : default 160
+% -------------------------------------------------------------------------
+
+if nargin < 1 || isempty(opts)
+    opts = struct();
+end
+opts = applyPlotDefaults(opts);
+
+S = load(opts.levelsFile, 'subsetLevels');
+subsetLevels = S.subsetLevels;
+[projectedLevels, axisNames, basisLabel] = resolveProjectedLevels(subsetLevels, opts);
+
+fig = figure('Color', opts.backgroundColor, 'Name', 'Subset Simulation diagnostics');
+ax = axes(fig);
+hold(ax, 'on');
+grid(ax, 'on');
+box(ax, 'on');
+set(ax, 'Color', opts.axesColor, ...
+    'FontName', opts.fontName, ...
+    'FontSize', opts.fontSize, ...
+    'LineWidth', 1.0);
+
+colors = lines(max(subsetLevels.levelCount, 1));
+legendHandles = gobjects(subsetLevels.levelCount + 1, 1);
+legendLabels = strings(subsetLevels.levelCount + 1, 1);
+
+for k = 1:subsetLevels.levelCount
+    Z = projectedLevels(k).samples2D;
+    legendHandles(k) = scatter(ax, Z(:, 1), Z(:, 2), opts.markerSize, ...
+        'MarkerFaceColor', colors(k, :), ...
+        'MarkerEdgeColor', colors(k, :), ...
+        'MarkerFaceAlpha', 0.30, ...
+        'MarkerEdgeAlpha', 0.50, ...
+        'DisplayName', sprintf('SS-%d', k));
+
+    legendLabels(k) = sprintf('SS-%d  (b_%d = %.4g)', ...
+        k, k, projectedLevels(k).threshold);
+end
+
+[xGrid, yGrid, gGrid] = buildFailureContour(projectedLevels, opts.gridSize);
+if ~isempty(gGrid)
+    [~, contourHandle] = contour(ax, xGrid, yGrid, gGrid, [0 0], ...
+        'Color', [0.85 0.10 0.10], ...
+        'LineWidth', opts.lineWidth, ...
+        'DisplayName', 'g(x)=0');
+    legendHandles(subsetLevels.levelCount + 1) = contourHandle;
+    legendLabels(subsetLevels.levelCount + 1) = "Failure boundary  g(x)=0";
+end
+
+xlabel(ax, axisNames(1), 'FontName', opts.fontName, 'FontSize', opts.labelFontSize);
+ylabel(ax, axisNames(2), 'FontName', opts.fontName, 'FontSize', opts.labelFontSize);
+title(ax, { ...
+    sprintf('Subset Simulation diagnostic plot (%s)', basisLabel), ...
+    sprintf('P_f = %.4e,  \\beta = %.4f,  CoV = %.4f', subsetLevels.Pf, subsetLevels.beta, subsetLevels.CoV)}, ...
+    'FontName', opts.fontName, ...
+    'FontSize', opts.titleFontSize, ...
+    'FontWeight', 'bold');
+
+validLegend = isgraphics(legendHandles);
+legend(ax, legendHandles(validLegend), legendLabels(validLegend), ...
+    'Location', 'bestoutside', ...
+    'FontName', opts.fontName, ...
+    'FontSize', opts.legendFontSize);
+
+annotation(fig, 'textbox', [0.12 0.01 0.76 0.08], ...
+    'String', ['Interpretation: each cloud SS-k shows where the algorithm sampled at level k. ' ...
+               'As k increases, the samples move toward the rare-event region, and the red contour ' ...
+               'represents the estimated failure boundary g(x)=0 in the displayed 2D basis.'], ...
+    'EdgeColor', 'none', ...
+    'HorizontalAlignment', 'center', ...
+    'FontName', opts.fontName, ...
+    'FontSize', opts.fontSize, ...
+    'Color', [0.15 0.15 0.15]);
+
+axis(ax, 'tight');
+if ~isempty(opts.outputPng)
+    exportgraphics(fig, opts.outputPng, 'Resolution', 220);
+end
+end
+
+function opts = applyPlotDefaults(opts)
+if ~isfield(opts, 'workDir') || isempty(opts.workDir)
+    opts.workDir = 'C:\Kazuo-Script';
+end
+if ~isfield(opts, 'levelsFile') || isempty(opts.levelsFile)
+    opts.levelsFile = fullfile(opts.workDir, 'out_incremental', 'A9_subset_simulation_levels.mat');
+end
+if ~isfield(opts, 'outputPng')
+    opts.outputPng = '';
+end
+if ~isfield(opts, 'projectionMethod') || isempty(opts.projectionMethod)
+    opts.projectionMethod = 'auto';
+end
+if ~isfield(opts, 'backgroundColor') || isempty(opts.backgroundColor)
+    opts.backgroundColor = 'w';
+end
+if ~isfield(opts, 'axesColor') || isempty(opts.axesColor)
+    opts.axesColor = 'w';
+end
+if ~isfield(opts, 'fontName') || isempty(opts.fontName)
+    opts.fontName = 'Arial';
+end
+if ~isfield(opts, 'fontSize') || isempty(opts.fontSize)
+    opts.fontSize = 12;
+end
+if ~isfield(opts, 'titleFontSize') || isempty(opts.titleFontSize)
+    opts.titleFontSize = 16;
+end
+if ~isfield(opts, 'labelFontSize') || isempty(opts.labelFontSize)
+    opts.labelFontSize = 13;
+end
+if ~isfield(opts, 'legendFontSize') || isempty(opts.legendFontSize)
+    opts.legendFontSize = 11;
+end
+if ~isfield(opts, 'markerSize') || isempty(opts.markerSize)
+    opts.markerSize = 28;
+end
+if ~isfield(opts, 'lineWidth') || isempty(opts.lineWidth)
+    opts.lineWidth = 1.8;
+end
+if ~isfield(opts, 'gridSize') || isempty(opts.gridSize)
+    opts.gridSize = 160;
+end
+end
+
+function [levelsOut, axisNames, basisLabel] = resolveProjectedLevels(subsetLevels, opts)
+levelsOut = subsetLevels.levels;
+method = lower(string(opts.projectionMethod));
+
+switch method
+    case "auto"
+        for i = 1:numel(levelsOut)
+            levelsOut(i).samples2D = subsetLevels.levels(i).samples2D;
+        end
+        axisNames = string(subsetLevels.plotBasis.varNames(:));
+        basisLabel = subsetLevels.plotBasis.label;
+    case "pair"
+        pair = parseVariablePair(opts.variablePair, subsetLevels.varNames);
+        for i = 1:numel(levelsOut)
+            Xi = subsetLevels.levels(i).samplesX;
+            levelsOut(i).samples2D = Xi(:, pair);
+        end
+        axisNames = string(subsetLevels.varNames(pair));
+        basisLabel = sprintf('%s vs %s', axisNames(1), axisNames(2));
+    case "pca"
+        [coeff, mu, sigma] = computePcaBasis(subsetLevels);
+        for i = 1:numel(levelsOut)
+            Xi = subsetLevels.levels(i).samplesX;
+            Xs = (Xi - mu) ./ sigma;
+            Zi = Xs * coeff;
+            if size(Zi, 2) < 2
+                Zi(:, 2) = 0;
+            end
+            levelsOut(i).samples2D = Zi(:, 1:2);
+        end
+        axisNames = ["PC1"; "PC2"];
+        basisLabel = 'PCA projection (PC1 vs PC2)';
+    otherwise
+        error('A9_plot_subset_simulation_diagnostics:InvalidProjection', ...
+            'projectionMethod must be auto, pair or pca.');
+end
+end
+
+function [xGrid, yGrid, gGrid] = buildFailureContour(levelsOut, gridSize)
+zAll = [];
+gAll = [];
+for i = 1:numel(levelsOut)
+    zAll = [zAll; levelsOut(i).samples2D]; %#ok<AGROW>
+    gAll = [gAll; levelsOut(i).g(:)]; %#ok<AGROW>
+end
+
+if size(zAll, 1) < 3 || numel(unique(zAll(:, 1))) < 2 || numel(unique(zAll(:, 2))) < 2
+    xGrid = [];
+    yGrid = [];
+    gGrid = [];
+    return;
+end
+
+xMin = min(zAll(:, 1));
+xMax = max(zAll(:, 1));
+yMin = min(zAll(:, 2));
+yMax = max(zAll(:, 2));
+
+xPad = 0.05 * max(xMax - xMin, 1);
+yPad = 0.05 * max(yMax - yMin, 1);
+
+xv = linspace(xMin - xPad, xMax + xPad, gridSize);
+yv = linspace(yMin - yPad, yMax + yPad, gridSize);
+[xGrid, yGrid] = meshgrid(xv, yv);
+
+F = scatteredInterpolant(zAll(:, 1), zAll(:, 2), gAll, 'natural', 'none');
+gGrid = F(xGrid, yGrid);
+end
+
+function pair = parseVariablePair(variablePair, varNames)
+if ~exist('variablePair', 'var') || isempty(variablePair)
+    error('A9_plot_subset_simulation_diagnostics:MissingVariablePair', ...
+        'opts.variablePair is required when projectionMethod = ''pair''.');
+end
+
+if isnumeric(variablePair)
+    pair = reshape(variablePair, 1, []);
+else
+    pair = zeros(1, numel(variablePair));
+    for i = 1:numel(variablePair)
+        pair(i) = find(string(varNames) == string(variablePair{i}), 1, 'first');
+    end
+end
+
+if numel(pair) ~= 2 || any(pair < 1) || any(pair > numel(varNames))
+    error('A9_plot_subset_simulation_diagnostics:InvalidVariablePair', ...
+        'opts.variablePair must identify exactly two valid variables.');
+end
+pair = double(pair);
+end
+
+function [coeff, mu, sigma] = computePcaBasis(subsetLevels)
+X = [];
+for i = 1:subsetLevels.levelCount
+    X = [X; subsetLevels.levels(i).samplesX]; %#ok<AGROW>
+end
+mu = mean(X, 1);
+sigma = std(X, 0, 1);
+sigma(sigma == 0) = 1;
+Xs = (X - mu) ./ sigma;
+[~, ~, V] = svd(Xs, 'econ');
+coeff = V(:, 1:min(2, size(V, 2)));
+if size(coeff, 2) < 2
+    coeff(:, 2) = 0;
+end
+end
