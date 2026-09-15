@@ -231,7 +231,7 @@ function row = local_build_mcs_row(T_form, T_stage0, T_a5)
     row.Source = '';
 
     [pf, src] = local_find_metric_scalar(T_form, {'Pf_MCS', 'Pf_surrogate_on_RS2'});
-    [covv, ~] = local_find_metric_scalar(T_form, {'CoV_MCS', 'CoV_surrogate_on_RS2', 'CoV_Pf_surrogate_on_RS2'});
+    [covv, ~] = local_find_metric_scalar(T_form, {'CoV_MCS', 'CoV_Pf_MCS'});
 
     if isnan(pf)
         [pf, src] = local_find_metric_scalar(T_a5, {'Pf_MCS'});
@@ -787,7 +787,7 @@ function row = local_find_method(T_final, methodName)
     if isempty(T_final)
         return;
     end
-    hit = strcmp(string(T_final.Method), string(methodName));
+    hit = local_norm_name(string(T_final.Method)) == local_norm_name(string(methodName));
     if any(hit)
         row = T_final(find(hit, 1, 'first'), :);
     end

@@ -141,21 +141,15 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
     Pf = max(min(Pf, 1 - 1e-15), 1e-15);
     beta = local_beta_from_pf(Pf);
 
-    if pLast > 0
-        relVarLast = max(1 - pLast, 0) / (N * pLast);
-    else
-        relVarLast = NaN;
-    end
-
     if nIntermediate == 0
-        CoV = sqrt(relVarLast);
-    else
-        relVarSubset = nIntermediate * (1 - p0) / (N * p0);
-        if isnan(relVarLast)
-            CoV = NaN;
+        if pLast > 0
+            relVarLast = max(1 - pLast, 0) / (N * pLast);
+            CoV = sqrt(relVarLast);
         else
-            CoV = sqrt(relVarSubset + relVarLast);
+            CoV = NaN;
         end
+    else
+        CoV = NaN;
     end
 
     outSS = struct();
@@ -178,13 +172,15 @@ function X = local_u2x_gauss(U, myInput)
     end
     X = zeros(N, M);
     for k = 1:M
-        if isfield(myInput.Marginals(k), 'Type') && ~isempty(myInput.Marginals(k).Type)
-            thisType = lower(string(myInput.Marginals(k).Type));
-            if ~(thisType == "gaussian" || thisType == "normal")
-                error('A9_subset_simulation_pf:UnsupportedMarginal', ...
-                    'Marginal %d do tipo %s nao eh suportada por esta implementacao gaussiana.', ...
-                    k, char(thisType));
-            end
+        if ~isfield(myInput.Marginals(k), 'Type') || isempty(myInput.Marginals(k).Type)
+            error('A9_subset_simulation_pf:InvalidMarginal', ...
+                'Marginal %d deve declarar Type como Gaussian/Normal.', k);
+        end
+        thisType = lower(string(myInput.Marginals(k).Type));
+        if ~(thisType == "gaussian" || thisType == "normal")
+            error('A9_subset_simulation_pf:UnsupportedMarginal', ...
+                'Marginal %d do tipo %s nao eh suportada por esta implementacao gaussiana.', ...
+                k, char(thisType));
         end
         if ~isfield(myInput.Marginals(k), 'Parameters')
             error('A9_subset_simulation_pf:InvalidMarginal', ...
