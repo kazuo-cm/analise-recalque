@@ -95,7 +95,7 @@ function out = A9_plot_subset_simulation_diagnostics(opts)
     if hasContour
         contourLine = findobj(ax, 'Tag', 'failureContour');
         if ~isempty(contourLine)
-            contourLine.DisplayName = 'Fronteira de falha aproximada (g = 0)';
+            set(contourLine, 'DisplayName', 'Fronteira de falha aproximada (g = 0)');
         end
     else
         text(ax, 0.02, 0.02, contourMsg, 'Units', 'normalized', ...

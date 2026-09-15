@@ -246,8 +246,20 @@ function X = local_u2x_gauss(U, myInput)
 end
 
 function beta = local_beta_from_pf(Pf)
-    Pf = max(min(Pf, 1 - 1e-15), 1e-15);
-    beta = -sqrt(2) * erfcinv(2 * Pf);
+    if isnan(Pf)
+        beta = NaN;
+        return;
+    end
+    if Pf <= 0
+        beta = Inf;
+        return;
+    end
+    if Pf >= 1
+        beta = -Inf;
+        return;
+    end
+    pfSafe = max(min(Pf, 1 - 1e-15), 1e-15);
+    beta = -sqrt(2) * erfcinv(2 * pfSafe);
 end
 
 function levelData = local_pack_level_diagnostics(level, threshold, U, X, g)

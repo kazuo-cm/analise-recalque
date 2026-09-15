@@ -738,7 +738,7 @@ valuesOut = valuesOut(mask);
 end
 
 function textOut = buildMetricDetail(colPf, colBeta, colCov, colErr)
-parts = strings(0, 1);
+parts = strings(1, 0);
 if ~isempty(colPf)
     parts(end+1) = "Pf=" + string(colPf); %#ok<AGROW>
 end
@@ -751,7 +751,7 @@ end
 if ~isempty(colErr)
     parts(end+1) = "erro=" + string(colErr); %#ok<AGROW>
 end
-if isempty(parts)
+if numel(parts) == 0
     textOut = "sem coluna identificada";
 else
     textOut = strjoin(cellstr(parts), '; ');
