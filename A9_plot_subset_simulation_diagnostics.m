@@ -44,6 +44,7 @@ opts = applyPlotDefaults(opts);
 S = load(opts.levelsFile, 'subsetLevels');
 subsetLevels = S.subsetLevels;
 [projectedLevels, axisNames, basisLabel, basisMethod] = resolveProjectedLevels(subsetLevels, opts);
+drawBoundary = canDrawBoundary(subsetLevels, basisMethod);
 
 fig = figure('Color', opts.backgroundColor, 'Name', 'Subset Simulation diagnostics');
 ax = axes('Parent', fig);
@@ -74,7 +75,7 @@ end
 
 [xGrid, yGrid, gGrid] = buildFailureContour(projectedLevels, opts.gridSize);
 finiteMask = isfinite(gGrid);
-if ~strcmpi(basisMethod, 'pca') ...
+if drawBoundary ...
         && ~isempty(gGrid) && any(finiteMask(:)) ...
         && any(gGrid(finiteMask) <= 0) && any(gGrid(finiteMask) > 0)
     contourLabel = 'Failure boundary  g(x)=0';
@@ -104,7 +105,7 @@ legend(ax, legendHandles(legendIdx), legendLabels(legendIdx), ...
 annotation(fig, 'textbox', [0.12 0.01 0.76 0.08], ...
     'String', ['Interpretation: each cloud SS-k shows where the algorithm sampled at level k. ' ...
                'As k increases, the samples move toward the rare-event region, and the red contour ' ...
-               contourExplanation(basisMethod)], ...
+               contourExplanation(drawBoundary, basisMethod)], ...
     'EdgeColor', 'none', ...
     'HorizontalAlignment', 'center', ...
     'FontName', opts.fontName, ...
@@ -218,11 +219,25 @@ switch method
 end
 end
 
-function txt = contourExplanation(basisMethod)
-if strcmpi(basisMethod, 'pca')
+function txt = contourExplanation(drawBoundary, basisMethod)
+if drawBoundary
+    txt = 'represents the estimated failure boundary g(x)=0 in the displayed 2D basis.';
+elseif strcmpi(basisMethod, 'pca')
     txt = 'does not draw an explicit failure boundary, because multiple high-dimensional states can collapse onto the same PCA coordinates.';
 else
-    txt = 'represents the estimated failure boundary g(x)=0 in the displayed 2D basis.';
+    txt = 'does not draw an explicit failure boundary, because the plotted variable pair is only a partial view of a higher-dimensional limit state.';
+end
+end
+
+function tf = canDrawBoundary(subsetLevels, basisMethod)
+if ~strcmpi(basisMethod, 'pair')
+    tf = false;
+    return;
+end
+if isfield(subsetLevels, 'metadata') && isfield(subsetLevels.metadata, 'exact2DLimitStateView')
+    tf = logical(subsetLevels.metadata.exact2DLimitStateView);
+else
+    tf = size(subsetLevels.levels(1).samplesX, 2) == 2;
 end
 end
 

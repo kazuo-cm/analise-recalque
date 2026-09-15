@@ -137,12 +137,23 @@ if exist('finalSeedIdx', 'var')
 end
 
 pfLast = mean(levelRecords(finalLevel).g <= 0);
-Pf = (p0Eff ^ max(finalLevel - 1, 0)) * pfLast;
-beta = pf2beta(Pf);
-if finalLevel == 1
-    CoV = sqrt((1 - Pf) / max(nPerLevel * max(Pf, eps), eps));
+converged = thresholds(finalLevel) <= 0;
+if converged
+    Pf = (p0Eff ^ max(finalLevel - 1, 0)) * pfLast;
+    beta = pf2beta(Pf);
+    if finalLevel == 1
+        CoV = sqrt((1 - Pf) / max(nPerLevel * max(Pf, eps), eps));
+    else
+        CoV = subsetSimulationCoV(p0Eff, nPerLevel, finalLevel, pfLast);
+    end
 else
-    CoV = subsetSimulationCoV(p0Eff, nPerLevel, finalLevel, pfLast);
+    warning('A9_subset_simulation_pf:DidNotConverge', ...
+        ['Subset Simulation reached maxLevels = %d before the intermediate ' ...
+         'threshold crossed zero. Pf, beta and CoV are reported as NaN and ' ...
+         'the last threshold is stored for diagnostics.'], opts.maxLevels);
+    Pf = NaN;
+    beta = NaN;
+    CoV = NaN;
 end
 
 outSS = struct();
@@ -150,6 +161,8 @@ outSS.Pf = Pf;
 outSS.beta = beta;
 outSS.CoV = CoV;
 outSS.nLevels = finalLevel;
+outSS.converged = converged;
+outSS.finalThreshold = thresholds(finalLevel);
 outSS.p0 = p0Eff;
 outSS.p0Requested = opts.p0;
 outSS.thresholds = thresholds;
@@ -382,6 +395,8 @@ subsetLevels.metadata.description = strjoin({ ...
 subsetLevels.metadata.failureBoundaryReconstruction = ...
     'The diagnostic figure reconstructs the displayed g(x)=0 contour in 2D with scatteredInterpolant using the saved samples and g-values.';
 subsetLevels.metadata.baseSpace = 'standard_normal_base_space_for_builtin_kernel';
+subsetLevels.metadata.exact2DLimitStateView = (numel(varNames) == 2);
+subsetLevels.metadata.converged = isfinite(Pf);
 end
 
 function idxPair = recommendVariablePair(levelRecords, nVars)
