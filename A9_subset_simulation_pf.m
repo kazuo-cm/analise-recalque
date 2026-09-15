@@ -88,6 +88,8 @@ for levelIdx = 1:opts.maxLevels
 
     if threshold <= 0
         finalLevel = levelIdx;
+        finalX = X;
+        finalG = g;
         break;
     end
 
@@ -102,14 +104,14 @@ end
 
 if ~exist('finalLevel', 'var')
     finalLevel = opts.maxLevels;
+    finalX = X;
+    finalG = g;
 end
 
 levelRecords = levelRecords(1:finalLevel);
 thresholds = thresholds(1:finalLevel);
-
-if isempty(levelRecords(finalLevel).samplesX)
-    levelRecords(finalLevel) = makeLevelRecord(finalLevel, X, g, thresholds(finalLevel), [], []);
-end
+levelRecords(finalLevel) = makeLevelRecord( ...
+    finalLevel, finalX, finalG, thresholds(finalLevel), levelRecords(finalLevel).seedIndex, levelRecords(finalLevel).generationMeta);
 
 pfLast = mean(levelRecords(finalLevel).g <= 0);
 Pf = (opts.p0 ^ max(finalLevel - 1, 0)) * pfLast;
