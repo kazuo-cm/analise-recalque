@@ -16,8 +16,6 @@ function out = A10_finalize_reliability_results(work_dir)
 %   - out_incremental/final_reliability_report.txt
 %   - out_incremental/final_reliability_comparison.png
 
-clc;
-
 if nargin < 1 || isempty(work_dir)
     work_dir = 'C:\Kazuo-Script';
 end
@@ -73,32 +71,32 @@ if isnan(beta_pck)
     beta_pck = pf2beta(Pf_pck);
 end
 
-[Pf_form, colPfForm] = extractCompareMetric(Tcompare, {'Pf_FORM','FORM_Pf','PfForm','Pf_FORM_surrogate'}, {'FORM'}, {'Pf'});
-[beta_form, colBetaForm] = extractCompareMetric(Tcompare, {'beta_FORM','Beta_FORM','FORM_beta','betaForm','beta_FORM_surrogate'}, {'FORM'}, {'beta','Beta'});
+[Pf_form, colPfForm] = extractCompareMetric(Tcompare, {'Pf_FORM','FORM_Pf','PfForm','Pf_FORM_surrogate'}, {'FORM','FORM surrogate','FORM_surrogate'}, {'Pf'});
+[beta_form, colBetaForm] = extractCompareMetric(Tcompare, {'beta_FORM','Beta_FORM','FORM_beta','betaForm','beta_FORM_surrogate'}, {'FORM','FORM surrogate','FORM_surrogate'}, {'beta','Beta'});
 if isnan(beta_form)
     beta_form = pf2beta(Pf_form);
 end
-[cov_form, colCovForm] = extractCompareMetric(Tcompare, {'CoV_FORM','cov_FORM','CoV_Pf_FORM'}, {'FORM'}, {'CoV','cov'});
-[err_form, colErrForm] = extractCompareMetric(Tcompare, {'Error_FORM','StdErr_FORM','SE_FORM','AbsError_FORM'}, {'FORM'}, {'Error','StdErr','SE'});
+[cov_form, colCovForm] = extractCompareMetric(Tcompare, {'CoV_FORM','cov_FORM','CoV_Pf_FORM'}, {'FORM','FORM surrogate','FORM_surrogate'}, {'CoV','cov'});
+[err_form, colErrForm] = extractCompareMetric(Tcompare, {'Error_FORM','StdErr_FORM','SE_FORM','AbsError_FORM'}, {'FORM','FORM surrogate','FORM_surrogate'}, {'Error','StdErr','SE'});
 
 [Pf_mcs, colPfMcs] = extractCompareMetric( ...
     Tcompare, ...
     {'Pf_MCS','Pf_MCS_surrogate','Pf_surrogate_on_RS2','Pf_surrogate_on_RS2_calibrated','Pf_MC','Pf_MonteCarlo'}, ...
-    {'MCS','Monte Carlo','surrogate'}, ...
+    {'MCS','MCS surrogate','MCS_surrogate','Monte Carlo','MonteCarlo'}, ...
     {'Pf'});
-[beta_mcs, colBetaMcs] = extractCompareMetric(Tcompare, {'beta_MCS','Beta_MCS','MCS_beta','beta_MC'}, {'MCS','Monte Carlo'}, {'beta','Beta'});
+[beta_mcs, colBetaMcs] = extractCompareMetric(Tcompare, {'beta_MCS','Beta_MCS','MCS_beta','beta_MC'}, {'MCS','MCS surrogate','MCS_surrogate','Monte Carlo','MonteCarlo'}, {'beta','Beta'});
 if isnan(beta_mcs)
     beta_mcs = pf2beta(Pf_mcs);
 end
 [cov_mcs, colCovMcs] = extractCompareMetric( ...
     Tcompare, ...
     {'CoV_MCS','cov_MCS','CoV_Pf_MCS','CoV_surrogate_on_RS2','cov_surrogate_on_RS2','CoV_Pf_surrogate_on_RS2'}, ...
-    {'MCS','Monte Carlo','surrogate'}, ...
+    {'MCS','MCS surrogate','MCS_surrogate','Monte Carlo','MonteCarlo'}, ...
     {'CoV','cov'});
 [err_mcs, colErrMcs] = extractCompareMetric( ...
     Tcompare, ...
     {'Error_MCS','StdErr_MCS','SE_MCS','AbsError_MCS','Error_surrogate_on_RS2'}, ...
-    {'MCS','Monte Carlo','surrogate'}, ...
+    {'MCS','MCS surrogate','MCS_surrogate','Monte Carlo','MonteCarlo'}, ...
     {'Error','StdErr','SE'});
 
 Pf_ss = getStructMetric(outSS, {'Pf','pf'});
@@ -165,8 +163,13 @@ MetricDetail = string({
 
 AbsErrorPfRef = NaN(size(Pf));
 RelErrorPctPfRef = NaN(size(Pf));
-RelDirection = repmat("referência", size(Method));
+RelDirection = strings(size(Method));
+RelDirection(:) = missing;
+RelDirection(1) = "referência";
 for i = 2:numel(Method)
+    if isnan(Pf(i))
+        continue;
+    end
     AbsErrorPfRef(i) = abs(Pf(i) - Pf_ref);
     RelErrorPctPfRef(i) = 100 * safeDivide(AbsErrorPfRef(i), Pf_ref);
     RelDirection(i) = classifyRelativeBias(Pf(i), Pf_ref);
@@ -469,10 +472,11 @@ methodCol = findColumnName(T, {'Method','method','Metodo','Label','Name'});
 valueCol = findColumnName(T, longValueCandidates);
 if ~isempty(methodCol) && ~isempty(valueCol)
     methods = string(T.(methodCol));
+    targetMethods = normalizeTokens(rowMethodCandidates);
     for i = 1:numel(methods)
         methodName = normalizeOne(methods(i));
-        for j = 1:numel(rowMethodCandidates)
-            if contains(methodName, normalizeOne(rowMethodCandidates{j}))
+        for j = 1:numel(targetMethods)
+            if strcmp(methodName, targetMethods{j})
                 value = firstNumericFromArray(T.(valueCol)(i));
                 selectedColumn = sprintf('%s (linha %s)', valueCol, char(methods(i)));
                 if ~isnan(value)
