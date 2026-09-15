@@ -71,6 +71,11 @@ if ~opts.assumeStandardNormalBaseSpace
 end
 nPerLevel = opts.N;
 nSeeds = max(1, round(opts.p0 * nPerLevel));
+if nSeeds >= nPerLevel
+    error('A9_subset_simulation_pf:InvalidSeedCount', ...
+        ['opts.p0 and opts.N must leave at least one non-seed sample per level. ' ...
+         'Choose settings with round(opts.p0 * opts.N) < opts.N.']);
+end
 p0Eff = nSeeds / nPerLevel;
 
 if abs(p0Eff - opts.p0) > 1e-12
@@ -405,7 +410,7 @@ if nVars == 1
 end
 scores = estimateVariableInfluence(levelRecords, nVars);
 [~, order] = sort(scores, 'descend');
-idxPair = sort(order(1:min(2, nVars)));
+idxPair = order(1:min(2, nVars));
 if numel(idxPair) < 2
     idxPair = [idxPair(1) min(nVars, idxPair(1) + 1)];
 end
