@@ -191,7 +191,7 @@ nVars4 = getFirstTableValue(Tstage4rep, {'nVars','NVars','n_variables'});
 [histLOO, colHistLOO] = getHistoryVector(Tstage4hist, {'LOO_best','LOO','LOOBest','Q2_LOO'});
 
 %% 4-panel figure
-f = figure('Color','w','Position',[100 100 1500 950]);
+f = figure('Color','w','Position',[100 100 1500 950],'Visible','off');
 tiledlayout(2,2,'Padding','compact','TileSpacing','compact');
 
 % Panel 1: final Pf comparison
@@ -613,10 +613,13 @@ end
 
 function ratio = safeDivide(a, b)
 ratio = NaN(size(a));
-if isnan(b) || abs(b) < eps
+if isscalar(b)
+    validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
+    ratio(validMask) = a(validMask) ./ b;
     return;
 end
-ratio = a ./ b;
+validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
+ratio(validMask) = a(validMask) ./ b(validMask);
 end
 
 function label = classifyRelativeBias(pf, pfRef)
@@ -628,16 +631,6 @@ elseif pf > pfRef
     label = "superestima";
 else
     label = "subestima";
-end
-end
-
-function value = firstFinite(varargin)
-value = NaN;
-for i = 1:nargin
-    if ~isnan(varargin{i})
-        value = varargin{i};
-        return;
-    end
 end
 end
 
