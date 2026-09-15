@@ -140,9 +140,18 @@ CoV = [
     NaN
     NaN
     NaN
-    firstFinite(cov_form, err_form)
-    firstFinite(cov_mcs, err_mcs)
+    cov_form
+    cov_mcs
     cov_ss
+];
+
+ErrorOrStd = [
+    NaN
+    NaN
+    NaN
+    err_form
+    err_mcs
+    NaN
 ];
 
 MetricDetail = string({
@@ -162,8 +171,8 @@ for i = 1:numel(Method)
 end
 
 Tfinal = table( ...
-    Method, Pf, Beta, CoV, AbsErrorPfRef, RelErrorPctPfRef, RelDirection, MetricDetail, ...
-    'VariableNames', {'Method','Pf','beta','CoV_or_Error','AbsError_vs_Pf_ref','RelErrorPct_vs_Pf_ref','Bias_vs_Pf_ref','SourceDetail'});
+    Method, Pf, Beta, CoV, ErrorOrStd, AbsErrorPfRef, RelErrorPctPfRef, RelDirection, MetricDetail, ...
+    'VariableNames', {'Method','Pf','beta','CoV_Pf','Error_or_StdError','AbsError_vs_Pf_ref','RelErrorPct_vs_Pf_ref','Bias_vs_Pf_ref','SourceDetail'});
 
 writetable(Tfinal, f_out_csv);
 
@@ -214,30 +223,55 @@ hasLeft = false;
 hasRight = false;
 if ~isempty(histIter)
     if ~isempty(histPfHat)
-        yyaxis left;
-        plot(histIter, histPfHat, '-o', 'LineWidth', 1.5, 'MarkerSize', 5); hold on;
-        hasLeft = true;
+        [iterPfHat, valPfHat] = buildPlotSeries(histIter, histPfHat);
+    else
+        iterPfHat = [];
+        valPfHat = [];
     end
     if ~isempty(histPfSS)
+        [iterPfSS, valPfSS] = buildPlotSeries(histIter, histPfSS);
+    else
+        iterPfSS = [];
+        valPfSS = [];
+    end
+    if ~isempty(histR2)
+        [iterR2, valR2] = buildPlotSeries(histIter, histR2);
+    else
+        iterR2 = [];
+        valR2 = [];
+    end
+    if ~isempty(histLOO)
+        [iterLOO, valLOO] = buildPlotSeries(histIter, histLOO);
+    else
+        iterLOO = [];
+        valLOO = [];
+    end
+
+    if ~isempty(valPfHat)
+        yyaxis left;
+        plot(iterPfHat, valPfHat, '-o', 'LineWidth', 1.5, 'MarkerSize', 5); hold on;
+        hasLeft = true;
+    end
+    if ~isempty(valPfSS)
         if ~hasLeft
             yyaxis left;
             hold on;
         end
-        plot(histIter, histPfSS, '-s', 'LineWidth', 1.5, 'MarkerSize', 5);
+        plot(iterPfSS, valPfSS, '-s', 'LineWidth', 1.5, 'MarkerSize', 5);
         hasLeft = true;
     end
     if hasLeft
         ylabel('P_f');
     end
 
-    if ~isempty(histR2) || ~isempty(histLOO)
+    if ~isempty(valR2) || ~isempty(valLOO)
         yyaxis right;
         hold on;
-        if ~isempty(histR2)
-            plot(histIter, histR2, '-^', 'LineWidth', 1.5, 'MarkerSize', 5);
+        if ~isempty(valR2)
+            plot(iterR2, valR2, '-^', 'LineWidth', 1.5, 'MarkerSize', 5);
         end
-        if ~isempty(histLOO)
-            plot(histIter, histLOO, '-d', 'LineWidth', 1.5, 'MarkerSize', 5);
+        if ~isempty(valLOO)
+            plot(iterLOO, valLOO, '-d', 'LineWidth', 1.5, 'MarkerSize', 5);
         end
         ylabel('Qualidade do surrogate');
         hasRight = true;
@@ -247,7 +281,7 @@ if ~isempty(histIter)
         grid on;
         xlabel('Iteração AL');
         title('Diagnósticos de stage 4');
-        legendStrings = buildStage4Legend(~isempty(histPfHat), ~isempty(histPfSS), ~isempty(histR2), ~isempty(histLOO));
+        legendStrings = buildStage4Legend(~isempty(valPfHat), ~isempty(valPfSS), ~isempty(valR2), ~isempty(valLOO));
         legend(legendStrings, 'Location', 'best');
     else
         text(0.1, 0.5, 'stage4\_al\_history.csv sem colunas suportadas', 'FontSize', 11);
@@ -283,11 +317,12 @@ fprintf(fid, '   Stage 4 history : %s\n', f_stage4_hist);
 fprintf(fid, '   A9 result       : %s\n\n', f_a9_result);
 
 fprintf(fid, '2) Comparacao final principal (referencia = Pf_ref)\n');
-fprintf(fid, '   %-32s %12s %12s %14s %14s\n', 'Metodo', 'Pf', 'beta', '|erro abs|', 'erro rel [%]');
-fprintf(fid, '   %s\n', repmat('-',1,90));
+fprintf(fid, '   %-32s %12s %12s %12s %12s %14s %14s\n', 'Metodo', 'Pf', 'beta', 'CoV', 'Err/SE', '|erro abs|', 'erro rel [%]');
+fprintf(fid, '   %s\n', repmat('-',1,118));
 for i = 1:height(Tfinal)
-    fprintf(fid, '   %-32s %12.6g %12.6f %14.6g %14.3f\n', ...
-        char(Tfinal.Method(i)), Tfinal.Pf(i), Tfinal.beta(i), Tfinal.AbsError_vs_Pf_ref(i), Tfinal.RelErrorPct_vs_Pf_ref(i));
+    fprintf(fid, '   %-32s %12.6g %12.6f %12.6g %12.6g %14.6g %14.3f\n', ...
+        char(Tfinal.Method(i)), Tfinal.Pf(i), Tfinal.beta(i), Tfinal.CoV_Pf(i), Tfinal.Error_or_StdError(i), ...
+        Tfinal.AbsError_vs_Pf_ref(i), Tfinal.RelErrorPct_vs_Pf_ref(i));
 end
 fprintf(fid, '\n');
 
@@ -602,6 +637,22 @@ for i = 1:nargin
         return;
     end
 end
+
+    function [iterOut, valuesOut] = buildPlotSeries(iterVec, valuesVec)
+    iterOut = [];
+    valuesOut = [];
+
+    if isempty(iterVec) || isempty(valuesVec)
+        return;
+    end
+
+    n = min(numel(iterVec), numel(valuesVec));
+    iterOut = iterVec(1:n);
+    valuesOut = valuesVec(1:n);
+    mask = isfinite(iterOut) & isfinite(valuesOut);
+    iterOut = iterOut(mask);
+    valuesOut = valuesOut(mask);
+    end
 end
 
 function textOut = buildMetricDetail(colPf, colBeta, colCov, colErr)
