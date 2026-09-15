@@ -186,6 +186,10 @@ function X = local_u2x_gauss(U, myInput)
                     k, char(thisType));
             end
         end
+        if ~isfield(myInput.Marginals(k), 'Parameters')
+            error('A9_subset_simulation_pf:InvalidMarginal', ...
+                'Marginal %d deve conter o campo Parameters.', k);
+        end
         params = myInput.Marginals(k).Parameters;
         if numel(params) < 2
             error('A9_subset_simulation_pf:InvalidMarginal', ...

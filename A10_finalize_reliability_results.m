@@ -189,17 +189,14 @@ function row = local_build_subset_row(T_a5, outSS, T_hist)
     if isnan(pf)
         [pf, src] = local_find_metric_scalar(T_a5, {'Pf_SS', 'Pf_SubSetSimulation', 'Pf_SubsetSimulation'});
     end
-    if isnan(beta) && ~isnan(pf)
-        beta = local_beta_from_pf(pf);
-    end
     if isnan(covv)
         [covv, ~] = local_find_metric_scalar(T_a5, {'CoV_SS', 'CoV_Pf_SS'});
     end
     if isnan(pf)
         [pf, src] = local_find_last_history_value(T_hist, {'Pf_SS'});
-        if ~isnan(pf) && isnan(beta)
-            beta = local_beta_from_pf(pf);
-        end
+    end
+    if isnan(beta) && ~isnan(pf)
+        beta = local_beta_from_pf(pf);
     end
 
     if ~isnan(pf)
@@ -313,7 +310,13 @@ function outSS = local_read_optional_outss(pathFile)
             'Arquivo nao encontrado: %s', pathFile);
         return;
     end
-    S = load(pathFile);
+    try
+        S = load(pathFile);
+    catch ME
+        warning('A10_finalize_reliability_results:LoadFailed', ...
+            'Falha ao carregar %s (%s).', pathFile, ME.message);
+        return;
+    end
     if isfield(S, 'outSS')
         outSS = S.outSS;
     else
