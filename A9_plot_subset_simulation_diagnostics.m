@@ -126,6 +126,9 @@ end
 if ~isfield(opts, 'projectionMethod') || isempty(opts.projectionMethod)
     opts.projectionMethod = 'auto';
 end
+if ~isfield(opts, 'variablePair')
+    opts.variablePair = [];
+end
 if ~isfield(opts, 'backgroundColor') || isempty(opts.backgroundColor)
     opts.backgroundColor = 'w';
 end
@@ -238,11 +241,16 @@ if isnumeric(variablePair)
 else
     pair = zeros(1, numel(variablePair));
     for i = 1:numel(variablePair)
-        pair(i) = find(string(varNames) == string(variablePair{i}), 1, 'first');
+        matchIdx = find(string(varNames) == string(variablePair{i}), 1, 'first');
+        if isempty(matchIdx)
+            pair(i) = NaN;
+        else
+            pair(i) = matchIdx;
+        end
     end
 end
 
-if numel(pair) ~= 2 || any(pair < 1) || any(pair > numel(varNames))
+if numel(pair) ~= 2 || any(isnan(pair)) || any(pair < 1) || any(pair > numel(varNames))
     error('A9_plot_subset_simulation_diagnostics:InvalidVariablePair', ...
         'opts.variablePair must identify exactly two valid variables.');
 end
