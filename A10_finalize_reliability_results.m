@@ -268,6 +268,7 @@ close(f);
 %% Text report
 fid = fopen(f_out_txt, 'w');
 assert(fid > 0, 'Nao foi possivel criar: %s', f_out_txt);
+cleanupObj = onCleanup(@() safeCloseFile(fid)); %#ok<NASGU>
 
 fprintf(fid, 'RELATORIO FINAL DE CONFIABILIDADE\n');
 fprintf(fid, '=================================\n\n');
@@ -320,8 +321,6 @@ fprintf(fid, '6) Saidas geradas\n');
 fprintf(fid, '   %s\n', f_out_csv);
 fprintf(fid, '   %s\n', f_out_txt);
 fprintf(fid, '   %s\n', f_out_png);
-
-fclose(fid);
 
 %% Console output
 fprintf('\n=== A10: consolidacao final concluida ===\n');
@@ -632,10 +631,6 @@ x = reordercats(x, cellstr(labels));
 bar(x, values, 'FaceColor', colorRGB);
 grid on;
 xtickangle(25);
-finiteVals = values(isfinite(values));
-if ~isempty(finiteVals) && all(finiteVals > 0) && max(finiteVals) / min(finiteVals) > 100
-    set(gca, 'YScale', 'log');
-end
 end
 
 function legendStrings = buildStage4Legend(hasPfHat, hasPfSS, hasR2, hasLOO)
@@ -692,4 +687,10 @@ end
 
 fprintf(fid, '   %-32s : Pf = %.6g, %s Pf_ref, |erro abs| = %.6g, erro rel = %.3f %%.\n', ...
     methodName, pfValue, relation, absErr, relErr);
+end
+
+function safeCloseFile(fid)
+if fid > 0
+    fclose(fid);
+end
 end
