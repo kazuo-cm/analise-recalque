@@ -98,7 +98,7 @@ function out = A10_finalize_reliability_results()
 
     fprintf('\n=== Final reliability summary ===\n');
     fprintf('Diretorio de trabalho: %s\n', work_dir);
-    local_print_method_line('RS2 empirico', rs2);
+    local_print_method_line('RS2 empírico', rs2);
     local_print_method_line('PCK', pck);
     local_print_method_line('Subset Simulation', ss);
     fprintf('Status final do aprendizado ativo: %s\n', stage4_status);
@@ -499,10 +499,23 @@ function cols = local_text_columns(T)
     cols = [];
     for i = 1:width(T)
         col = T{:, i};
-        if iscellstr(col) || isstring(col) || ischar(col) || iscategorical(col) || iscell(col)
+        if isstring(col) || ischar(col) || iscategorical(col) || local_is_text_cell_column(col)
             cols(end+1) = i; %#ok<AGROW>
         end
     end
+end
+
+function tf = local_is_text_cell_column(col)
+    tf = false;
+    if ~iscell(col)
+        return;
+    end
+    keep = ~cellfun(@isempty, col);
+    if ~any(keep)
+        return;
+    end
+    sample = col(keep);
+    tf = all(cellfun(@(x) ischar(x) || isstring(x), sample));
 end
 
 function cols = local_value_columns(T, candidateNames)
@@ -675,6 +688,11 @@ function local_plot_pf_history(T_hist)
     if any(mask)
         semilogy(iter(mask), pfSS(mask), '-s', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{SS}');
         plotted = true;
+    end
+    if hasR2
+        yyaxis left;
+    elseif hasLoo
+        yyaxis right;
     end
     grid on;
     xlabel('Iteracao AL');
