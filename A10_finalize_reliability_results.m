@@ -416,8 +416,22 @@ function beta = local_beta_from_pf(Pf)
 end
 
 function s = local_norm_name(s)
-    s = lower(string(s));
+    s = local_strip_accents(lower(string(s)));
     s = regexprep(s, '[^a-z0-9]+', '');
+end
+
+function s = local_strip_accents(s)
+    pairs = {
+        'á','a'; 'à','a'; 'â','a'; 'ã','a'; 'ä','a'; ...
+        'é','e'; 'è','e'; 'ê','e'; 'ë','e'; ...
+        'í','i'; 'ì','i'; 'î','i'; 'ï','i'; ...
+        'ó','o'; 'ò','o'; 'ô','o'; 'õ','o'; 'ö','o'; ...
+        'ú','u'; 'ù','u'; 'û','u'; 'ü','u'; ...
+        'ç','c' ...
+    };
+    for i = 1:size(pairs, 1)
+        s = replace(s, pairs{i, 1}, pairs{i, 2});
+    end
 end
 
 function v = local_first_numeric(data)
@@ -624,6 +638,7 @@ function local_plot_method_metric(methods, values, xlab, useLog)
         grid on;
         set(gca, 'YDir', 'reverse');
         set(gca, 'YTick', yPlot, 'YTickLabel', string(methods(good)));
+        ylim([0.5, numel(methods) + 0.5]);
         xlabel(xlab);
         if useLog
             set(gca, 'XScale', 'log');

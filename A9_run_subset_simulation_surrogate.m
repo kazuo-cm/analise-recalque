@@ -21,15 +21,15 @@ function outSS = A9_run_subset_simulation_surrogate(opts)
         error('A9_run_subset_simulation_surrogate:MissingStage3', ...
             'Nao encontrado: %s', stage3_mat);
     end
-    if exist('uq_evalModel', 'file') ~= 2
-        error('A9_run_subset_simulation_surrogate:UQLabMissing', ...
-            'uq_evalModel nao encontrado. Inicialize o UQLab antes de rodar o A9.');
-    end
     if exist('uqlab', 'file') == 2
         try
             uqlab('-nosplash');
         catch
         end
+    end
+    if exist('uq_evalModel', 'file') ~= 2
+        error('A9_run_subset_simulation_surrogate:UQLabMissing', ...
+            'uq_evalModel nao encontrado. Inicialize o UQLab antes de rodar o A9.');
     end
 
     S = load(stage3_mat);
