@@ -163,10 +163,12 @@ MetricDetail = string({
     'resultado A9_subset_simulation_result.mat'
 });
 
-AbsErrorPfRef = abs(Pf - Pf_ref);
-RelErrorPctPfRef = 100 * safeDivide(AbsErrorPfRef, Pf_ref);
-RelDirection = strings(size(Method));
-for i = 1:numel(Method)
+AbsErrorPfRef = NaN(size(Pf));
+RelErrorPctPfRef = NaN(size(Pf));
+RelDirection = repmat("referência", size(Method));
+for i = 2:numel(Method)
+    AbsErrorPfRef(i) = abs(Pf(i) - Pf_ref);
+    RelErrorPctPfRef(i) = 100 * safeDivide(AbsErrorPfRef(i), Pf_ref);
     RelDirection(i) = classifyRelativeBias(Pf(i), Pf_ref);
 end
 
@@ -192,6 +194,7 @@ nVars4 = getFirstTableValue(Tstage4rep, {'nVars','NVars','n_variables'});
 
 %% 4-panel figure
 f = figure('Color','w','Position',[100 100 1500 950],'Visible','off');
+figureCleanup = onCleanup(@() safeCloseFigure(f)); %#ok<NASGU>
 tiledlayout(2,2,'Padding','compact','TileSpacing','compact');
 
 % Panel 1: final Pf comparison
@@ -210,7 +213,7 @@ title('Comparação final de \beta');
 nexttile;
 errMethods = Method;
 errVals = RelErrorPctPfRef;
-plotComparisonBars(errMethods, errVals, [0.35 0.64 0.35]);
+plotComparisonBars(errMethods(2:end), errVals(2:end), [0.35 0.64 0.35]);
 ylabel('Erro relativo [%]');
 title('Erro relativo em relação a P_f_{ref}');
 hold on;
@@ -297,7 +300,6 @@ annotationText = sprintf('Histórico: iter=%s | Pf_{hat}=%s | Pf_{SS}=%s | R2=%s
 sgtitle({'Consolidação final de confiabilidade', annotationText}, 'FontWeight', 'bold');
 
 exportgraphics(f, f_out_png, 'Resolution', dpi);
-close(f);
 
 %% Text report
 fid = fopen(f_out_txt, 'w');
@@ -738,5 +740,11 @@ end
 function safeCloseFile(fid)
 if fid > 0
     fclose(fid);
+end
+end
+
+function safeCloseFigure(figHandle)
+if ishghandle(figHandle)
+    close(figHandle);
 end
 end

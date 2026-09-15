@@ -25,6 +25,9 @@ Tfinal = readtable(fullfile(rootDir, 'out_incremental', 'final_reliability_summa
 
 assert(ismember('CoV_Pf', Tfinal.Properties.VariableNames));
 assert(ismember('Error_or_StdError', Tfinal.Properties.VariableNames));
+assertNaNMetric(Tfinal, 'Pf_ref', 'AbsError_vs_Pf_ref');
+assertNaNMetric(Tfinal, 'Pf_ref', 'RelErrorPct_vs_Pf_ref');
+assertTextMetric(Tfinal, 'Pf_ref', 'Bias_vs_Pf_ref', 'referência');
 assertMetric(Tfinal, 'FORM (surrogate)', 'Pf', 0.11);
 assertMetric(Tfinal, 'FORM (surrogate)', 'beta', 1.2265);
 assertMetric(Tfinal, 'FORM (surrogate)', 'AbsError_vs_Pf_ref', 0.01);
@@ -56,6 +59,9 @@ out = A10_finalize_reliability_results(rootDir); %#ok<NASGU>
 Tfinal = readtable(fullfile(rootDir, 'out_incremental', 'final_reliability_summary.csv'));
 
 assertMetric(Tfinal, 'FORM (surrogate)', 'Pf', 0.105);
+assertNaNMetric(Tfinal, 'Pf_ref', 'AbsError_vs_Pf_ref');
+assertNaNMetric(Tfinal, 'Pf_ref', 'RelErrorPct_vs_Pf_ref');
+assertTextMetric(Tfinal, 'Pf_ref', 'Bias_vs_Pf_ref', 'referência');
 assertMetric(Tfinal, 'FORM (surrogate)', 'CoV_Pf', 0.02);
 assertMetric(Tfinal, 'FORM (surrogate)', 'Error_or_StdError', 0.001);
 assertMetric(Tfinal, 'FORM (surrogate)', 'AbsError_vs_Pf_ref', 0.005);
@@ -130,6 +136,14 @@ actualValue = string(T.(columnName)(find(idx, 1, 'first')));
 assert(actualValue == string(expectedValue), ...
     'Texto inesperado para %s / %s: %s ~= %s', ...
     methodName, columnName, actualValue, expectedValue);
+end
+
+function assertNaNMetric(T, methodName, columnName)
+idx = strcmp(string(T.Method), string(methodName));
+assert(any(idx), 'Método não encontrado: %s', methodName);
+
+actualValue = T.(columnName)(find(idx, 1, 'first'));
+assert(isnan(actualValue), 'Esperado NaN para %s / %s.', methodName, columnName);
 end
 
 function cleanupFolder(rootDir)
