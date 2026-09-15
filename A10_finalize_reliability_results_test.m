@@ -1,8 +1,9 @@
 function A10_finalize_reliability_results_test()
+% Focused regression coverage for A10_finalize_reliability_results.
 % Regressão focada para A10_finalize_reliability_results.
-% Exercita duas variantes de pf_compare_form_mcs.csv:
-%   1) formato wide com colunas Pf_FORM/Pf_MCS_surrogate
-%   2) formato long com colunas Method/Pf/beta/CoV/Error
+% Exercises two pf_compare_form_mcs.csv variants:
+%   1) wide format with Pf_FORM/Pf_MCS_surrogate columns
+%   2) long format with Method/Pf/beta/CoV/Error columns
 
 testWideFormat();
 testLongFormat();

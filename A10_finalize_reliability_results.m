@@ -171,15 +171,7 @@ for i = 2:numel(Method)
         continue;
     end
     AbsErrorPfRef(i) = abs(Pf(i) - Pf_ref);
-    if abs(Pf_ref) < eps
-        if AbsErrorPfRef(i) < eps
-            RelErrorPctPfRef(i) = 0;
-        else
-            RelErrorPctPfRef(i) = Inf;
-        end
-    else
-        RelErrorPctPfRef(i) = 100 * safeDivide(AbsErrorPfRef(i), Pf_ref);
-    end
+    RelErrorPctPfRef(i) = computeRelativeErrorPct(AbsErrorPfRef(i), Pf_ref);
     RelDirection(i) = classifyRelativeBias(Pf(i), Pf_ref);
 end
 
@@ -639,6 +631,18 @@ validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
 ratio(validMask) = a(validMask) ./ b(validMask);
 end
 
+function relErrPct = computeRelativeErrorPct(absErr, pfRef)
+if abs(pfRef) < eps
+    if absErr < eps
+        relErrPct = 0;
+    else
+        relErrPct = Inf;
+    end
+else
+    relErrPct = 100 * safeDivide(absErr, pfRef);
+end
+end
+
 function label = classifyRelativeBias(pf, pfRef)
 if isnan(pf) || isnan(pfRef)
     label = "indisponível";
@@ -739,7 +743,7 @@ if isnan(pfValue)
 end
 
 absErr = abs(pfValue - pfRef);
-relErr = 100 * safeDivide(absErr, pfRef);
+relErr = computeRelativeErrorPct(absErr, pfRef);
 if pfValue > pfRef
     relation = 'superestima';
 elseif pfValue < pfRef
