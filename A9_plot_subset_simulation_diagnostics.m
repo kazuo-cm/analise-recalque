@@ -171,8 +171,13 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     end
 
     if ~usePCA && M >= 2
-        idx = local_pick_most_influential_dims(Xall, gall);
-        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential');
+        if M == 2
+            P = [1 2];
+        else
+            idx = local_pick_most_influential_dims(Xall, gall);
+            P = idx(1:2);
+        end
+        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, P, 'influential');
         return;
     end
 

@@ -443,9 +443,15 @@ end
 
 fields = fieldnames(S);
 for i = 1:numel(fields)
-    if isstruct(S.(fields{i})) && any(isfield(S.(fields{i}), {'Pf','pf'}))
-        outSS = S.(fields{i});
-        return;
+    if isstruct(S.(fields{i}))
+        candidate = S.(fields{i});
+        hasPf = isfield(candidate, 'Pf') || isfield(candidate, 'pf');
+        hasBeta = isfield(candidate, 'beta') || isfield(candidate, 'Beta');
+        hasLevels = isfield(candidate, 'nLevels');
+        if hasPf && hasBeta && hasLevels
+            outSS = candidate;
+            return;
+        end
     end
 end
 

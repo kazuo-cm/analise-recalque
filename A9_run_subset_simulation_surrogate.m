@@ -77,6 +77,9 @@ function outSS = A9_run_subset_simulation_surrogate(opts)
     outSS.vars_train = vars_train;
     outSS.myInput = myInput;
 
+    if ~isfolder(out_dir)
+        mkdir(out_dir);
+    end
     save(result_mat, 'outSS', 'opts', 'myInput', 'vars_train');
 
     fprintf('\n=== Subset Simulation via surrogate ===\n');
