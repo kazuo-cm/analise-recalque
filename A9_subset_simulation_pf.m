@@ -21,7 +21,8 @@ function outSS = A9_subset_simulation_pf(gfun, sampleFcn, opts)
 %
 % Inputs
 %   gfun      : function handle, g = gfun(X), failure defined by g <= 0
-%   sampleFcn : function handle, X = sampleFcn(n), independent base samples
+%   sampleFcn : function handle, X = sampleFcn(n), independent samples in
+%               the standard-normal base space used by the built-in SS kernel
 %   opts      : optional struct
 %
 % Important options
@@ -35,6 +36,7 @@ function outSS = A9_subset_simulation_pf(gfun, sampleFcn, opts)
 %   opts.plotBasis        : struct controlling the stored 2D basis
 %                           .method = 'auto' | 'pair' | 'pca'
 %                           .variablePair = [i j] or {'x1','x2'}
+%   opts.assumeStandardNormalBaseSpace : keep true for the built-in kernel
 %
 % The saved diagnostics are intentionally self-contained so A10 can ignore
 % them unless a later consolidation step wants to reference the file path.
@@ -58,13 +60,23 @@ opts = applyDefaults(opts);
 validateattributes(opts.N, {'numeric'}, {'scalar', 'integer', 'positive'});
 validateattributes(opts.maxLevels, {'numeric'}, {'scalar', 'integer', 'positive'});
 validateattributes(opts.p0, {'numeric'}, {'scalar', '>', 0, '<', 1});
+if ~opts.assumeStandardNormalBaseSpace
+    error('A9_subset_simulation_pf:UnsupportedBaseSpace', ...
+        ['The built-in conditional sampler assumes a standard-normal base ' ...
+         'space with a symmetric random-walk proposal. Set ' ...
+         'opts.assumeStandardNormalBaseSpace = true or replace this driver ' ...
+         'with a sampler consistent with your target density.']);
+end
 nPerLevel = opts.N;
 nSeeds = max(1, round(opts.p0 * nPerLevel));
 nPerChain = max(1, ceil(nPerLevel / nSeeds));
+p0Eff = nSeeds / nPerLevel;
 
-if abs(nSeeds / nPerLevel - opts.p0) > 1e-12
+if abs(p0Eff - opts.p0) > 1e-12
     warning('A9_subset_simulation_pf:RoundedP0', ...
-        'opts.p0*N was rounded to %d seeds to maintain a finite number of chains.', nSeeds);
+        ['opts.p0*N was rounded to %d seeds; the estimator will use the ' ...
+         'realized conditional probability %.12g instead of the requested %.12g.'], ...
+        nSeeds, p0Eff, opts.p0);
 end
 
 X = ensure2D(sampleFcn(nPerLevel));
@@ -114,11 +126,11 @@ levelRecords(finalLevel) = makeLevelRecord( ...
     finalLevel, finalX, finalG, thresholds(finalLevel), levelRecords(finalLevel).seedIndex, levelRecords(finalLevel).generationMeta);
 
 pfLast = mean(levelRecords(finalLevel).g <= 0);
-Pf = (opts.p0 ^ max(finalLevel - 1, 0)) * pfLast;
+Pf = (p0Eff ^ max(finalLevel - 1, 0)) * pfLast;
 beta = pf2beta(Pf);
-CoV = subsetSimulationCoV(opts.p0, nPerLevel, finalLevel, pfLast);
+CoV = subsetSimulationCoV(p0Eff, nPerLevel, finalLevel, pfLast);
 
-subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames);
+subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff);
 subsetLevels = attachStored2DBasis(subsetLevels, opts);
 
 outSS = struct();
@@ -126,6 +138,8 @@ outSS.Pf = Pf;
 outSS.beta = beta;
 outSS.CoV = CoV;
 outSS.nLevels = finalLevel;
+outSS.p0 = p0Eff;
+outSS.p0Requested = opts.p0;
 outSS.thresholds = thresholds;
 outSS.levelsFile = fullfile(opts.outDir, 'A9_subset_simulation_levels.mat');
 outSS.resultFile = fullfile(opts.outDir, 'A9_subset_simulation_result.mat');
@@ -157,6 +171,9 @@ if ~isfield(opts, 'outDir') || isempty(opts.outDir)
 end
 if ~isfield(opts, 'plotBasis') || isempty(opts.plotBasis)
     opts.plotBasis = struct('method', 'auto');
+end
+if ~isfield(opts, 'assumeStandardNormalBaseSpace') || isempty(opts.assumeStandardNormalBaseSpace)
+    opts.assumeStandardNormalBaseSpace = true;
 end
 end
 
@@ -297,7 +314,7 @@ level.samples2D = zeros(size(X, 1), 2);
 level.projectionLabel = "";
 end
 
-function subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames)
+function subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff)
 subsetLevels = struct();
 subsetLevels.version = '1.0';
 subsetLevels.createdAt = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
@@ -306,7 +323,8 @@ subsetLevels.Pf = Pf;
 subsetLevels.beta = beta;
 subsetLevels.CoV = CoV;
 subsetLevels.N = opts.N;
-subsetLevels.p0 = opts.p0;
+subsetLevels.p0 = p0Eff;
+subsetLevels.p0Requested = opts.p0;
 subsetLevels.maxLevels = opts.maxLevels;
 subsetLevels.varNames = varNames;
 subsetLevels.levelThresholds = thresholds(:);
@@ -325,6 +343,7 @@ subsetLevels.metadata.description = strjoin({ ...
     'The final contour g(x)=0 is the failure boundary used in the reliability estimate.'}, ' ');
 subsetLevels.metadata.failureBoundaryReconstruction = ...
     'The diagnostic figure reconstructs the displayed g(x)=0 contour in 2D with scatteredInterpolant using the saved samples and g-values.';
+subsetLevels.metadata.baseSpace = 'standard_normal_base_space_for_builtin_kernel';
 end
 
 function idxPair = recommendVariablePair(levelRecords, nVars)

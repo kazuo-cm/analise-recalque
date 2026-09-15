@@ -111,6 +111,10 @@ annotation(fig, 'textbox', [0.12 0.01 0.76 0.08], ...
 
 axis(ax, 'tight');
 if ~isempty(opts.outputPng)
+    outFolder = fileparts(opts.outputPng);
+    if ~isempty(outFolder) && ~isfolder(outFolder)
+        mkdir(outFolder);
+    end
     exportgraphics(fig, opts.outputPng, 'Resolution', 220);
 end
 end
