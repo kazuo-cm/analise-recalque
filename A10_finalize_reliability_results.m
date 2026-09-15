@@ -301,7 +301,7 @@ function txt = local_read_optional_text(pathFile)
         return;
     end
     cleaner = onCleanup(@() fclose(fid));
-    txt = fread(fid, '*char')'; %#ok<NASGU>
+    txt = fread(fid, '*char')';
     txt = strtrim(txt);
     clear cleaner;
 end
@@ -594,7 +594,7 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
 end
 
 function txt = local_sanitize_user_text(txt)
-    txt = regexprep(char(txt), '\<A6[A-Za-z0-9_\\-]*\>', '');
+    txt = regexprep(char(txt), '(?i)\<A6[A-Za-z0-9_\\-]*\>', '');
     txt = regexprep(txt, '(^|[[:space:]])[_\\-]+([[:space:]]|$)', '$1$2');
     txt = strtrim(txt);
 end
@@ -626,6 +626,9 @@ end
 function local_plot_method_metric(methods, values, xlab, useLog)
     y = 1:numel(methods);
     good = isfinite(values);
+    if useLog
+        good = good & (values > 0);
+    end
     if any(good)
         yPlot = y(good);
         plot(values(good), yPlot, 'o-', 'LineWidth', 1.5, 'MarkerSize', 8, ...
