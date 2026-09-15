@@ -73,7 +73,7 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
         b = gs(nKeep);
         bLevels(level) = b;
         if recordDiagnostics
-            levelDiagnostics(level) = local_pack_level_diagnostics(level, b, U, u2x(U), g);
+            levelDiagnostics(level) = local_pack_level_diagnostics(level, b, U, X, g);
         end
 
         if b <= 0
@@ -140,6 +140,9 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
 
         U = Unew(1:N, :);
         g = gnew(1:N);
+        if recordDiagnostics
+            X = u2x(U);
+        end
     end
 
     nLevels = level;

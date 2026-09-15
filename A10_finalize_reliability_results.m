@@ -398,8 +398,11 @@ end
 
 function filePath = locateRequiredFile(fileName, candidateDirs)
 filePath = locateOptionalFile(fileName, candidateDirs);
-assert(~isempty(filePath), 'Arquivo nao encontrado: %s (locais verificados: %s)', ...
-    fileName, strjoin(candidateDirs, ', '));
+if isempty(filePath)
+    error('A10_finalize_reliability_results:MissingRequiredFile', ...
+        'Arquivo nao encontrado: %s (locais verificados: %s)', ...
+        fileName, strjoin(candidateDirs, ', '));
+end
 end
 
 function filePath = locateOptionalFile(fileName, candidateDirs)

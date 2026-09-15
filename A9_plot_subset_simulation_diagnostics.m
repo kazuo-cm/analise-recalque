@@ -181,8 +181,9 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
         return;
     end
 
+    Xstd = local_standardize(Xall);
     try
-        [coeff, score] = pca(Xall, 'NumComponents', 2);
+        [coeff, score] = pca(Xstd, 'NumComponents', 2);
     catch
         idx = local_pick_most_influential_dims(Xall, gall);
         P = idx(1:2);
@@ -214,7 +215,7 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
         labels{k} = sprintf('SS-%d (b=%.3g)', LD(k).level, LD(k).threshold);
         i0 = i0 + nk;
     end
-    expVar = 100 * var(score(:, 1:2), 0, 1) ./ max(sum(var(Xall, 0, 1)), eps);
+    expVar = 100 * var(score(:, 1:2), 0, 1) ./ max(sum(var(Xstd, 0, 1)), eps);
     projInfo = struct();
     projInfo.mode = 'pca';
     projInfo.variables = [1 2];
@@ -222,6 +223,14 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     projInfo.yLabel = sprintf('PC2 (%.1f%%)', expVar(2));
     projInfo.description = sprintf('Projeção PCA 2D (componentes principais de X), var.=%.1f%%', sum(expVar));
     projInfo.loadings = coeff;
+end
+
+function Xs = local_standardize(X)
+    mu = mean(X, 1, 'omitnan');
+    sg = std(X, 0, 1, 'omitnan');
+    sg(~isfinite(sg) | sg <= 0) = 1;
+    Xs = bsxfun(@rdivide, bsxfun(@minus, X, mu), sg);
+    Xs(~isfinite(Xs)) = 0;
 end
 
 function idx = local_pick_most_influential_dims(X, g)
