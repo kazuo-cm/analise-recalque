@@ -17,7 +17,7 @@ function out = A10_finalize_reliability_results(work_dir)
 %   - out_incremental/final_reliability_comparison.png
 
 if nargin < 1 || isempty(work_dir)
-    work_dir = 'C:\Kazuo-Script';
+    work_dir = resolveWorkflowDir();
 end
 
 %% Paths
@@ -394,6 +394,23 @@ out.stage4_nIter = nIterStage4;
 out.stage4_Pf_hat = Pf_hat_final;
 out.stage4_Pf_SS = Pf_SS_final;
 
+end
+
+function work_dir = resolveWorkflowDir()
+here = pwd;
+script_dir = fileparts(mfilename('fullpath'));
+candidates = {here, script_dir, 'C:\Kazuo-Script'};
+for i = 1:numel(candidates)
+    base = candidates{i};
+    if isempty(base) || ~isfolder(base)
+        continue;
+    end
+    if isfolder(fullfile(base, 'out_incremental')) || isfolder(fullfile(base, 'outputs_a5'))
+        work_dir = base;
+        return;
+    end
+end
+work_dir = here;
 end
 
 function filePath = locateRequiredFile(fileName, candidateDirs)

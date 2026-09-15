@@ -231,6 +231,10 @@ function X = local_u2x_gauss(U, myInput)
         end
         mu = params(1);
         sg = params(2);
+        if ~isfinite(sg) || sg <= 0
+            error('A9_subset_simulation_pf:InvalidMarginal', ...
+                'Marginal %d possui sigma invalido (deve ser finito e > 0).', k);
+        end
         X(:, k) = mu + sg * U(:, k);
     end
 end

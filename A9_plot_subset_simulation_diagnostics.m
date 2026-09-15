@@ -177,15 +177,22 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     end
 
     Xstd = local_standardize(Xall);
-    try
-        [coeff, score] = pca(Xstd, 'NumComponents', 2);
-    catch
+    if exist('pca', 'file') ~= 2
         idx = local_pick_most_influential_dims(Xall, gall);
         [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential-fallback');
         projInfo.description = sprintf(['PCA indisponível, projeção de fallback ' ...
             'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
         return;
     end
+    if size(Xstd, 1) < 2
+        idx = local_pick_most_influential_dims(Xall, gall);
+        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential-fallback');
+        projInfo.description = sprintf(['PCA sem amostras suficientes, projeção de fallback ' ...
+            'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
+        return;
+    end
+
+    [coeff, score] = pca(Xstd, 'NumComponents', 2);
     ZLevels = cell(nLevels, 1);
     gLevels = cell(nLevels, 1);
     labels = cell(nLevels, 1);
