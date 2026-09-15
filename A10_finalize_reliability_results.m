@@ -430,7 +430,9 @@ for i = 1:numel(fields)
     end
 end
 
-error('Nao foi possivel localizar a estrutura de resultado da A9.');
+error('A10_finalize_reliability_results:InvalidA9ResultStruct', ...
+    ['Nao foi possivel localizar a estrutura de resultado da A9 em ' ...
+     'A9_subset_simulation_result.mat (campos carregados: %s).'], strjoin(fields', ', '));
 end
 
 function pfRef = getStage0PfRef(T)

@@ -91,21 +91,35 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
 
         Useed = U(idxSeed, :);
         gseed = g(idxSeed);
+        if recordDiagnostics
+            Xseed = X(idxSeed, :);
+        end
 
         Unew = zeros(N, M);
         gnew = zeros(N, 1);
+        if recordDiagnostics
+            Xnew = zeros(N, M);
+        end
 
         chainLen = ceil(N / nKeep);
         c = 0;
         for i = 1:nKeep
             uc = Useed(i, :);
             gc = gseed(i);
+            if recordDiagnostics
+                xc = Xseed(i, :);
+            end
 
             for t = 1:chainLen
                 up = uc + sProp * randn(1, M);
                 logAlpha = -0.5 * (sum(up.^2) - sum(uc.^2));
                 if log(rand) <= min(0, logAlpha)
-                    gp = gfunX(u2x(up));
+                    if recordDiagnostics
+                        xp = u2x(up);
+                        gp = gfunX(xp);
+                    else
+                        gp = gfunX(u2x(up));
+                    end
                     gp = gp(:);
                     if numel(gp) ~= 1
                         error('A9_subset_simulation_pf:InvalidResponse', ...
@@ -116,6 +130,9 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
                     if gp <= b
                         uc = up;
                         gc = gp;
+                        if recordDiagnostics
+                            xc = xp;
+                        end
                     end
                 end
 
@@ -123,6 +140,9 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
                 if c <= N
                     Unew(c, :) = uc;
                     gnew(c, 1) = gc;
+                    if recordDiagnostics
+                        Xnew(c, :) = xc;
+                    end
                 else
                     break;
                 end
@@ -141,7 +161,7 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
         U = Unew(1:N, :);
         g = gnew(1:N);
         if recordDiagnostics
-            X = u2x(Unew(1:N, :));
+            X = Xnew(1:N, :);
         end
     end
 

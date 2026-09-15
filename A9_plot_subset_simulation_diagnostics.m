@@ -151,21 +151,7 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
 
     if ~usePCA && M >= 2
         idx = local_pick_most_influential_dims(Xall, gall);
-        P = idx(1:2);
-        ZLevels = cell(nLevels, 1);
-        gLevels = cell(nLevels, 1);
-        labels = cell(nLevels, 1);
-        for k = 1:nLevels
-            ZLevels{k} = LD(k).X(:, P);
-            gLevels{k} = LD(k).g(:);
-            labels{k} = sprintf('SS-%d (b=%.3g)', LD(k).level, LD(k).threshold);
-        end
-        projInfo = struct();
-        projInfo.mode = 'influential';
-        projInfo.variables = P;
-        projInfo.xLabel = sprintf('X_{%d}', P(1));
-        projInfo.yLabel = sprintf('X_{%d}', P(2));
-        projInfo.description = sprintf('Projeção nas variáveis mais influentes: X_%d e X_%d', P(1), P(2));
+        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential');
         return;
     end
 
@@ -193,22 +179,9 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
         [coeff, score] = pca(Xstd, 'NumComponents', 2);
     catch
         idx = local_pick_most_influential_dims(Xall, gall);
-        P = idx(1:2);
-        ZLevels = cell(nLevels, 1);
-        gLevels = cell(nLevels, 1);
-        labels = cell(nLevels, 1);
-        for k = 1:nLevels
-            ZLevels{k} = LD(k).X(:, P);
-            gLevels{k} = LD(k).g(:);
-            labels{k} = sprintf('SS-%d (b=%.3g)', LD(k).level, LD(k).threshold);
-        end
-        projInfo = struct();
-        projInfo.mode = 'influential-fallback';
-        projInfo.variables = P;
-        projInfo.xLabel = sprintf('X_{%d}', P(1));
-        projInfo.yLabel = sprintf('X_{%d}', P(2));
+        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential-fallback');
         projInfo.description = sprintf(['PCA indisponível, projeção de fallback ' ...
-            'nas variáveis X_%d e X_%d'], P(1), P(2));
+            'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
         return;
     end
     ZLevels = cell(nLevels, 1);
@@ -238,6 +211,24 @@ function Xs = local_standardize(X)
     sg(~isfinite(sg) | sg <= 0) = 1;
     Xs = bsxfun(@rdivide, bsxfun(@minus, X, mu), sg);
     Xs(~isfinite(Xs)) = 0;
+end
+
+function [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, P, modeName)
+    nLevels = numel(LD);
+    ZLevels = cell(nLevels, 1);
+    gLevels = cell(nLevels, 1);
+    labels = cell(nLevels, 1);
+    for k = 1:nLevels
+        ZLevels{k} = LD(k).X(:, P);
+        gLevels{k} = LD(k).g(:);
+        labels{k} = sprintf('SS-%d (b=%.3g)', LD(k).level, LD(k).threshold);
+    end
+    projInfo = struct();
+    projInfo.mode = char(modeName);
+    projInfo.variables = P;
+    projInfo.xLabel = sprintf('X_{%d}', P(1));
+    projInfo.yLabel = sprintf('X_{%d}', P(2));
+    projInfo.description = sprintf('Projeção nas variáveis mais influentes: X_%d e X_%d', P(1), P(2));
 end
 
 function idx = local_pick_most_influential_dims(X, g)
