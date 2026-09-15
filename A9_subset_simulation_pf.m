@@ -96,6 +96,8 @@ levelMeta = repmat(struct(), opts.maxLevels, 1);
 for levelIdx = 1:opts.maxLevels
     [threshold, seedIdx] = computeIntermediateThreshold(g, nSeeds);
     thresholds(levelIdx) = threshold;
+    lastSeedIdx = seedIdx;
+    lastLevelMeta = levelMeta(levelIdx);
 
     levelRecords(levelIdx) = makeLevelRecord(levelIdx, X, g, threshold, seedIdx, levelMeta(levelIdx));
 
@@ -121,6 +123,10 @@ if ~exist('finalLevel', 'var')
     finalLevel = opts.maxLevels;
     finalX = X;
     finalG = g;
+end
+if ~exist('finalSeedIdx', 'var') && exist('lastSeedIdx', 'var')
+    finalSeedIdx = lastSeedIdx;
+    finalLevelMeta = lastLevelMeta;
 end
 
 levelRecords = levelRecords(1:finalLevel);

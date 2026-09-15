@@ -74,13 +74,10 @@ end
 
 [xGrid, yGrid, gGrid] = buildFailureContour(projectedLevels, opts.gridSize);
 finiteMask = isfinite(gGrid);
-if ~isempty(gGrid) && any(finiteMask(:)) ...
+if ~strcmpi(basisMethod, 'pca') ...
+        && ~isempty(gGrid) && any(finiteMask(:)) ...
         && any(gGrid(finiteMask) <= 0) && any(gGrid(finiteMask) > 0)
-    if strcmpi(basisMethod, 'pca')
-        contourLabel = 'Projected zero-level estimate';
-    else
-        contourLabel = 'Failure boundary  g(x)=0';
-    end
+    contourLabel = 'Failure boundary  g(x)=0';
     contourHandle = contour(ax, xGrid, yGrid, gGrid, [0 0], ...
         'Color', [0.85 0.10 0.10], ...
         'LineWidth', opts.lineWidth, ...
@@ -223,7 +220,7 @@ end
 
 function txt = contourExplanation(basisMethod)
 if strcmpi(basisMethod, 'pca')
-    txt = 'shows a projected zero-level estimate in the displayed PCA basis.';
+    txt = 'does not draw an explicit failure boundary, because multiple high-dimensional states can collapse onto the same PCA coordinates.';
 else
     txt = 'represents the estimated failure boundary g(x)=0 in the displayed 2D basis.';
 end
