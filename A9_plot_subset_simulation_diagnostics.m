@@ -167,10 +167,12 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
         end
         projInfo = struct();
         projInfo.mode = 'xg';
+        projInfo.usesResponseOnY = true;
         projInfo.variables = 1;
         projInfo.xLabel = 'X_1';
         projInfo.yLabel = 'g(X)';
         projInfo.description = 'Modelo 1D: plano [X_1, g(X)]';
+        projInfo.coordinateMeaning = 'col1 = X_1, col2 = g(X)';
         return;
     end
 
@@ -198,10 +200,12 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     expVar = 100 * var(score(:, 1:2), 0, 1) ./ max(sum(var(Xstd, 0, 1)), eps);
     projInfo = struct();
     projInfo.mode = 'pca';
+    projInfo.usesResponseOnY = false;
     projInfo.variables = [1 2];
     projInfo.xLabel = sprintf('PC1 (%.1f%%)', expVar(1));
     projInfo.yLabel = sprintf('PC2 (%.1f%%)', expVar(2));
     projInfo.description = sprintf('Projeção PCA 2D (componentes principais de X), var.=%.1f%%', sum(expVar));
+    projInfo.coordinateMeaning = 'col1 e col2 = coordenadas PCA de X';
     projInfo.loadings = coeff;
 end
 
@@ -225,10 +229,12 @@ function [ZLevels, gLevels, labels, projInfo] = local_make_influential_projectio
     end
     projInfo = struct();
     projInfo.mode = char(modeName);
+    projInfo.usesResponseOnY = false;
     projInfo.variables = P;
     projInfo.xLabel = sprintf('X_{%d}', P(1));
     projInfo.yLabel = sprintf('X_{%d}', P(2));
     projInfo.description = sprintf('Projeção nas variáveis mais influentes: X_%d e X_%d', P(1), P(2));
+    projInfo.coordinateMeaning = 'col1 e col2 = coordenadas projetadas de X';
 end
 
 function idx = local_pick_most_influential_dims(X, g)

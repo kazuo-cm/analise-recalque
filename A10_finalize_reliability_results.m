@@ -437,7 +437,10 @@ end
 
 function pfRef = getStage0PfRef(T)
 pfRef = getFirstTableValue(T, {'Pf_ref','PfRef','pf_ref'});
-assert(~isnan(pfRef), 'Nao foi possivel localizar Pf_ref em summary_stage0.csv.');
+if isnan(pfRef)
+    error('A10_finalize_reliability_results:MissingPfRef', ...
+        'Nao foi possivel localizar Pf_ref em summary_stage0.csv.');
+end
 end
 
 function value = getMethodMetric(T, methodCandidates, valueCandidates)
