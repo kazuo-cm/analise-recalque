@@ -201,24 +201,24 @@ figureCleanup = onCleanup(@() safeCloseFigure(f)); %#ok<NASGU>
 tiledlayout(2,2,'Padding','compact','TileSpacing','compact');
 
 % Panel 1: final Pf comparison
-nexttile;
-plotComparisonBars(Method, Pf, [0.24 0.48 0.78]);
+ax1 = nexttile;
+plotComparisonBars(ax1, Method, Pf, [0.24 0.48 0.78]);
 ylabel('P_f');
 title('Comparação final de P_f');
 
 % Panel 2: final beta comparison
-nexttile;
-plotComparisonBars(Method, Beta, [0.86 0.42 0.20]);
+ax2 = nexttile;
+plotComparisonBars(ax2, Method, Beta, [0.86 0.42 0.20]);
 ylabel('\beta');
 title('Comparação final de \beta');
 
 % Panel 3: relative error vs Pf_ref
-nexttile;
+ax3 = nexttile;
 errMethods = Method;
 errVals = RelErrorPctPfRef;
-plotComparisonBars(errMethods(2:end), errVals(2:end), [0.35 0.64 0.35]);
-ylabel('Erro relativo [%]');
-title('Erro relativo em relação a P_f_{ref}');
+plotComparisonBars(ax3, errMethods(2:end), errVals(2:end), [0.35 0.64 0.35]);
+ylabel('Erro relativo absoluto [%]');
+title('Erro relativo absoluto em relação a P_f_{ref}');
 hold on;
 yline(0, '--k', 'LineWidth', 1.0);
 hold off;
@@ -738,12 +738,12 @@ else
 end
 end
 
-function plotComparisonBars(labels, values, colorRGB)
+function plotComparisonBars(ax, labels, values, colorRGB)
 x = 1:numel(values);
-bar(x, values, 'FaceColor', colorRGB);
-set(gca, 'XTick', x, 'XTickLabel', cellstr(labels));
-grid on;
-xtickangle(25);
+bar(ax, x, values, 'FaceColor', colorRGB);
+set(ax, 'XTick', x, 'XTickLabel', cellstr(labels));
+grid(ax, 'on');
+xtickangle(ax, 25);
 end
 
 function legendStrings = buildStage4Legend(hasPfHat, hasPfSS, hasR2, hasLOO)

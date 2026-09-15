@@ -136,25 +136,6 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     Xall = vertcat(Xcells{:});
     gall = vertcat(gcells{:});
 
-    modeReq = lower(string(opts.projection));
-    supportedModes = ["auto","pca","influential"];
-    if ~any(modeReq == supportedModes)
-        error('A9_plot_subset_simulation_diagnostics:InvalidProjection', ...
-            'opts.projection="%s" invalido. Use: auto, influential ou pca.', char(modeReq));
-    end
-    usePCA = false;
-    if modeReq == "pca"
-        usePCA = true;
-    elseif modeReq == "auto"
-        usePCA = (M > 2);
-    end
-
-    if ~usePCA && M >= 2
-        idx = local_pick_most_influential_dims(Xall, gall);
-        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential');
-        return;
-    end
-
     if M == 1
         ZLevels = cell(nLevels, 1);
         gLevels = cell(nLevels, 1);
@@ -173,6 +154,25 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
         projInfo.yLabel = 'g(X)';
         projInfo.description = 'Modelo 1D: plano [X_1, g(X)]';
         projInfo.coordinateMeaning = 'col1 = X_1, col2 = g(X)';
+        return;
+    end
+
+    modeReq = lower(string(opts.projection));
+    supportedModes = ["auto","pca","influential"];
+    if ~any(modeReq == supportedModes)
+        error('A9_plot_subset_simulation_diagnostics:InvalidProjection', ...
+            'opts.projection="%s" invalido. Use: auto, influential ou pca.', char(modeReq));
+    end
+    usePCA = false;
+    if modeReq == "pca"
+        usePCA = true;
+    elseif modeReq == "auto"
+        usePCA = (M > 2);
+    end
+
+    if ~usePCA && M >= 2
+        idx = local_pick_most_influential_dims(Xall, gall);
+        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential');
         return;
     end
 
