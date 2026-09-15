@@ -292,8 +292,9 @@ function [ok, msg] = local_plot_failure_contour(ax, ZLevels, gLevels, opts)
         return;
     end
 
-    Z = Z(isfinite(g), :);
-    g = g(isfinite(g));
+    okFinite = isfinite(g) & isfinite(Z(:, 1)) & isfinite(Z(:, 2));
+    Z = Z(okFinite, :);
+    g = g(okFinite);
     Zr = round(Z * 1e8) / 1e8;
     if size(unique(Zr, 'rows'), 1) < 10
         return;

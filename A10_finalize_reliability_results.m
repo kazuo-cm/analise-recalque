@@ -528,8 +528,8 @@ if ~isempty(methodCol) && ~isempty(valueCol)
         for j = 1:numel(targetMethods)
             if strcmp(methodName, targetMethods{j})
                 value = firstNumericFromArray(T.(valueCol)(i));
-                selectedColumn = sprintf('%s (linha %s)', valueCol, char(methods(i)));
                 if ~isnan(value)
+                    selectedColumn = sprintf('%s (linha %s)', valueCol, char(methods(i)));
                     return;
                 end
             end
