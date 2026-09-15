@@ -166,6 +166,10 @@ end
 
 function X = local_u2x_gauss(U, myInput)
     [N, M] = size(U);
+    if M ~= numel(myInput.Marginals)
+        error('A9_subset_simulation_pf:DimensionMismatch', ...
+            'U possui %d colunas, mas myInput contem %d marginais.', M, numel(myInput.Marginals));
+    end
     X = zeros(N, M);
     for k = 1:M
         params = myInput.Marginals(k).Parameters;

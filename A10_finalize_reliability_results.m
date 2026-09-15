@@ -88,7 +88,7 @@ function out = A10_finalize_reliability_results()
     final_png = fullfile(out_dir, 'final_reliability_comparison.png');
 
     writetable(T_public, final_csv);
-    local_write_report(final_txt, T_final, T_stage4, T_hist, txtA5, missing, paths, outSS, T_sobol, T_sobol_sel);
+    local_write_report(final_txt, T_final, T_stage4, T_hist, txtA5, missing, outSS, T_sobol, T_sobol_sel);
     local_make_figure(final_png, T_final, T_hist);
 
     stage4_status = local_find_status(T_stage4);
@@ -101,7 +101,7 @@ function out = A10_finalize_reliability_results()
     local_print_method_line('RS2 empirico', rs2);
     local_print_method_line('PCK', pck);
     local_print_method_line('Subset Simulation', ss);
-    fprintf('Stage 4 status: %s\n', stage4_status);
+    fprintf('Status final do aprendizado ativo: %s\n', stage4_status);
     fprintf('CSV final: %s\n', final_csv);
     fprintf('Relatorio final: %s\n', final_txt);
     fprintf('Figura final: %s\n', final_png);
@@ -518,7 +518,7 @@ function strs = local_column_strings(data)
     strs = string(data(:));
 end
 
-function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing, paths, outSS, T_sobol, T_sobol_sel)
+function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing, outSS, T_sobol, T_sobol_sel)
     fid = fopen(pathFile, 'w');
     if fid < 0
         error('A10_finalize_reliability_results:WriteFailed', ...
@@ -529,13 +529,6 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     fprintf(fid, 'FINAL RELIABILITY REPORT\n');
     fprintf(fid, 'Gerado em: %s\n\n', char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss')));
 
-    fprintf(fid, 'Arquivos consultados:\n');
-    names = fieldnames(paths);
-    for i = 1:numel(names)
-        fprintf(fid, ' - %s\n', paths.(names{i}));
-    end
-    fprintf(fid, '\n');
-
     fprintf(fid, 'Tabela final de comparacao:\n');
     for i = 1:height(T_final)
         fprintf(fid, ' - %-20s Pf=%-12.6g beta=%-10.4f CoV(Pf)=%s\n', ...
@@ -545,7 +538,7 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     fprintf(fid, '\n');
 
     stage4_status = local_find_status(T_stage4);
-    fprintf(fid, 'Stage 4 status final: %s\n', stage4_status);
+    fprintf(fid, 'Status final do aprendizado ativo: %s\n', stage4_status);
 
     [pfHat, srcPfHat] = local_find_last_history_value(T_hist, {'Pf_hat'});
     [pfSS, srcPfSS] = local_find_last_history_value(T_hist, {'Pf_SS'});
@@ -572,21 +565,24 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     end
 
     if ~isempty(T_sobol)
-        fprintf(fid, '\nSensibilidade Sobol disponivel em: %s\n', paths.sobol);
+        fprintf(fid, '\nResultados de sensibilidade global disponiveis.\n');
     end
     if ~isempty(T_sobol_sel)
-        fprintf(fid, 'Selecao acumulada ST>=0.99 disponivel em: %s\n', paths.sobol_sel);
+        fprintf(fid, 'Selecao acumulada por ST>=0.99 disponivel.\n');
     end
 
     if strlength(string(txtA5)) > 0
-        fprintf(fid, '\nTrecho do relatorio A5:\n');
-        fprintf(fid, '%s\n', local_sanitize_user_text(txtA5));
+        txtPublico = local_sanitize_user_text(txtA5);
+        if ~isempty(txtPublico)
+            fprintf(fid, '\nResumo textual consolidado:\n');
+            fprintf(fid, '%s\n', txtPublico);
+        end
     end
 
     if ~isempty(missing)
-        fprintf(fid, '\nArquivos ausentes ignorados nesta consolidacao:\n');
+        fprintf(fid, '\nObservacao: parte dos insumos esperados nao estava disponivel, e a consolidacao utilizou apenas os resultados encontrados.\n');
         for i = 1:numel(missing)
-            fprintf(fid, ' - %s\n', missing(i));
+            fprintf(fid, ' - Insumo opcional ausente %d.\n', i);
         end
     end
 
@@ -594,7 +590,7 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
 end
 
 function txt = local_sanitize_user_text(txt)
-    txt = regexprep(char(txt), '(?i)\<A[\s\\-_]*6[\s\\-_]*[A-Za-z0-9_\\-]*\>[\\s:;,\\)\\]\\-_./]*', ' ');
+    txt = regexprep(char(txt), '(?i)\<(?:A[\s\\-_]*\d+|stage[\s\\-_]*\d+)[\s\\-_]*[A-Za-z0-9_\\-]*\>[\\s:;,\\)\\]\\-_./]*', ' ');
     txt = regexprep(txt, '[ ]{2,}', ' ');
     txt = regexprep(txt, '[ ]+([,.;:])', '$1');
     txt = strtrim(txt);
@@ -602,6 +598,7 @@ end
 
 function local_make_figure(pathFile, T_final, T_hist)
     fig = figure('Color', 'w', 'Position', [80 80 1400 900]);
+    figCleaner = onCleanup(@() local_close_figure(fig));
     tl = tiledlayout(2, 2, 'Padding', 'compact', 'TileSpacing', 'compact'); %#ok<NASGU>
 
     nexttile;
@@ -621,7 +618,8 @@ function local_make_figure(pathFile, T_final, T_hist)
     title('Qualidade do surrogate ao longo do AL');
 
     exportgraphics(fig, pathFile, 'Resolution', 250);
-    close(fig);
+    clear figCleaner;
+    local_close_figure(fig);
 end
 
 function local_plot_method_metric(methods, values, xlab, useLog)
@@ -795,6 +793,12 @@ function work_dir = local_resolve_work_dir()
         base = candidates{i};
         if isempty(base) || ~isfolder(base)
             continue;
+        end
+
+        function local_close_figure(fig)
+            if ~isempty(fig) && isgraphics(fig)
+                close(fig);
+            end
         end
         outDir = fullfile(base, 'out_incremental');
         if isfolder(outDir)

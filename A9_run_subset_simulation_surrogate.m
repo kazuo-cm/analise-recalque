@@ -29,8 +29,8 @@ function outSS = A9_run_subset_simulation_surrogate(opts)
         end
     end
 
-    S = load(stage3_mat, 'bestModel', 'muY', 'sdY', 'vars_train', 'Xtr');
-    requiredFields = {'bestModel', 'muY', 'sdY', 'Xtr'};
+    S = load(stage3_mat);
+    requiredFields = {'bestModel', 'muY', 'sdY'};
     for i = 1:numel(requiredFields)
         if ~isfield(S, requiredFields{i})
             error('A9_run_subset_simulation_surrogate:MissingField', ...
@@ -41,12 +41,18 @@ function outSS = A9_run_subset_simulation_surrogate(opts)
     mdl = S.bestModel;
     muY = S.muY;
     sdY = S.sdY;
-    Xtr = S.Xtr;
+    myInput = local_resolve_input_model(S, opts);
+    M = numel(myInput.Marginals);
 
     if isfield(S, 'vars_train') && ~isempty(S.vars_train)
         vars_train = S.vars_train;
     else
-        vars_train = arrayfun(@(k) sprintf('X%d', k), 1:size(Xtr, 2), 'UniformOutput', false);
+        vars_train = arrayfun(@(k) sprintf('X%d', k), 1:M, 'UniformOutput', false);
+    end
+
+    if isfield(S, 'Xtr') && ~isempty(S.Xtr) && size(S.Xtr, 2) ~= M
+        error('A9_run_subset_simulation_surrogate:DimensionMismatch', ...
+            'Xtr possui %d colunas, mas myInput tem %d marginais.', size(S.Xtr, 2), M);
     end
 
     if ~isfield(opts, 'recalque_lim') || isempty(opts.recalque_lim)
@@ -58,29 +64,16 @@ function outSS = A9_run_subset_simulation_surrogate(opts)
     if ~isfield(opts, 'proposalScale') || isempty(opts.proposalScale), opts.proposalScale = 0.8; end
     if ~isfield(opts, 'seed') || isempty(opts.seed), opts.seed = 123; end
 
-    mu = mean(Xtr, 1, 'omitnan');
-    sg = std(Xtr, 0, 1, 'omitnan');
-    sg(~isfinite(sg) | sg <= 0) = 1e-6;
-
     gfunX = @(X) local_gfun_surrogate(X, mdl, muY, sdY, opts.recalque_lim);
-
-    M = size(Xtr, 2);
-    myInput = struct();
-    myInput.Marginals = repmat(struct('Type', 'Gaussian', 'Parameters', [0 1]), 1, M);
-    for k = 1:M
-        myInput.Marginals(k).Type = 'Gaussian';
-        myInput.Marginals(k).Parameters = [mu(k), sg(k)];
-    end
 
     outSS = A9_subset_simulation_pf(gfunX, myInput, opts);
     outSS.recalque_lim = opts.recalque_lim;
     outSS.work_dir = work_dir;
     outSS.out_dir = out_dir;
     outSS.vars_train = vars_train;
-    outSS.muX = mu;
-    outSS.sigmaX = sg;
+    outSS.myInput = myInput;
 
-    save(result_mat, 'outSS', 'opts', 'mu', 'sg', 'vars_train');
+    save(result_mat, 'outSS', 'opts', 'myInput', 'vars_train');
 
     fprintf('\n=== Subset Simulation via surrogate ===\n');
     fprintf('Diretorio de trabalho: %s\n', work_dir);
@@ -117,4 +110,45 @@ function work_dir = local_resolve_work_dir()
 
     error('A9_run_subset_simulation_surrogate:WorkDirNotFound', ...
         'Nao foi possivel localizar o diretorio do workflow (out_incremental).');
+end
+
+function myInput = local_resolve_input_model(S, opts)
+    if isfield(opts, 'myInput') && local_has_marginals(opts.myInput)
+        myInput = opts.myInput;
+        return;
+    end
+
+    stageCandidates = {'myInput', 'uqInput', 'inputModel'};
+    for i = 1:numel(stageCandidates)
+        name = stageCandidates{i};
+        if isfield(S, name) && local_has_marginals(S.(name))
+            myInput = S.(name);
+            return;
+        end
+    end
+
+    if isfield(opts, 'muX') && isfield(opts, 'sigmaX')
+        mu = opts.muX(:)';
+        sg = opts.sigmaX(:)';
+        if numel(mu) ~= numel(sg)
+            error('A9_run_subset_simulation_surrogate:InvalidMoments', ...
+                'opts.muX e opts.sigmaX devem ter o mesmo numero de elementos.');
+        end
+        sg(~isfinite(sg) | sg <= 0) = 1e-6;
+        myInput = struct();
+        myInput.Marginals = repmat(struct('Type', 'Gaussian', 'Parameters', [0 1]), 1, numel(mu));
+        for k = 1:numel(mu)
+            myInput.Marginals(k).Type = 'Gaussian';
+            myInput.Marginals(k).Parameters = [mu(k), sg(k)];
+        end
+        return;
+    end
+
+    error('A9_run_subset_simulation_surrogate:MissingInputModel', ...
+        ['Nao foi possivel reconstruir as marginais do problema. ' ...
+         'Forneca opts.myInput (preferencialmente) ou opts.muX/opts.sigmaX.']);
+end
+
+function tf = local_has_marginals(candidate)
+    tf = isstruct(candidate) && isfield(candidate, 'Marginals') && ~isempty(candidate.Marginals);
 end
