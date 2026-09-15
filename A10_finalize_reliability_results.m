@@ -637,22 +637,22 @@ for i = 1:nargin
         return;
     end
 end
+end
 
-    function [iterOut, valuesOut] = buildPlotSeries(iterVec, valuesVec)
-    iterOut = [];
-    valuesOut = [];
+function [iterOut, valuesOut] = buildPlotSeries(iterVec, valuesVec)
+iterOut = [];
+valuesOut = [];
 
-    if isempty(iterVec) || isempty(valuesVec)
-        return;
-    end
+if isempty(iterVec) || isempty(valuesVec)
+    return;
+end
 
-    n = min(numel(iterVec), numel(valuesVec));
-    iterOut = iterVec(1:n);
-    valuesOut = valuesVec(1:n);
-    mask = isfinite(iterOut) & isfinite(valuesOut);
-    iterOut = iterOut(mask);
-    valuesOut = valuesOut(mask);
-    end
+n = min(numel(iterVec), numel(valuesVec));
+iterOut = iterVec(1:n);
+valuesOut = valuesVec(1:n);
+mask = isfinite(iterOut) & isfinite(valuesOut);
+iterOut = iterOut(mask);
+valuesOut = valuesOut(mask);
 end
 
 function textOut = buildMetricDetail(colPf, colBeta, colCov, colErr)

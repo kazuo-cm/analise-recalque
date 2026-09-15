@@ -1,5 +1,5 @@
 function A10_finalize_reliability_results_test()
-% Regressao focada para A10_finalize_reliability_results.
+% Regressão focada para A10_finalize_reliability_results.
 % Exercita duas variantes de pf_compare_form_mcs.csv:
 %   1) formato wide com colunas Pf_FORM/Pf_MCS_surrogate
 %   2) formato long com colunas Method/Pf/beta/CoV/Error
@@ -27,9 +27,15 @@ assert(ismember('CoV_Pf', Tfinal.Properties.VariableNames));
 assert(ismember('Error_or_StdError', Tfinal.Properties.VariableNames));
 assertMetric(Tfinal, 'FORM (surrogate)', 'Pf', 0.11);
 assertMetric(Tfinal, 'FORM (surrogate)', 'beta', 1.2265);
+assertMetric(Tfinal, 'FORM (surrogate)', 'AbsError_vs_Pf_ref', 0.01);
+assertMetric(Tfinal, 'FORM (surrogate)', 'RelErrorPct_vs_Pf_ref', 10.0);
+assertTextMetric(Tfinal, 'FORM (surrogate)', 'Bias_vs_Pf_ref', 'superestima');
 assertMetric(Tfinal, 'MCS (surrogate)', 'Pf', 0.12);
 assertMetric(Tfinal, 'MCS (surrogate)', 'CoV_Pf', 0.08);
 assertMetric(Tfinal, 'MCS (surrogate)', 'Error_or_StdError', 0.003);
+assertMetric(Tfinal, 'MCS (surrogate)', 'AbsError_vs_Pf_ref', 0.02);
+assertMetric(Tfinal, 'MCS (surrogate)', 'RelErrorPct_vs_Pf_ref', 20.0);
+assertTextMetric(Tfinal, 'MCS (surrogate)', 'Bias_vs_Pf_ref', 'superestima');
 end
 
 function testLongFormat()
@@ -52,10 +58,16 @@ Tfinal = readtable(fullfile(rootDir, 'out_incremental', 'final_reliability_summa
 assertMetric(Tfinal, 'FORM (surrogate)', 'Pf', 0.105);
 assertMetric(Tfinal, 'FORM (surrogate)', 'CoV_Pf', 0.02);
 assertMetric(Tfinal, 'FORM (surrogate)', 'Error_or_StdError', 0.001);
+assertMetric(Tfinal, 'FORM (surrogate)', 'AbsError_vs_Pf_ref', 0.005);
+assertMetric(Tfinal, 'FORM (surrogate)', 'RelErrorPct_vs_Pf_ref', 5.0);
+assertTextMetric(Tfinal, 'FORM (surrogate)', 'Bias_vs_Pf_ref', 'superestima');
 assertMetric(Tfinal, 'MCS (surrogate)', 'Pf', 0.118);
 assertMetric(Tfinal, 'MCS (surrogate)', 'beta', 1.1840);
 assertMetric(Tfinal, 'MCS (surrogate)', 'CoV_Pf', 0.07);
 assertMetric(Tfinal, 'MCS (surrogate)', 'Error_or_StdError', 0.004);
+assertMetric(Tfinal, 'MCS (surrogate)', 'AbsError_vs_Pf_ref', 0.018);
+assertMetric(Tfinal, 'MCS (surrogate)', 'RelErrorPct_vs_Pf_ref', 18.0);
+assertTextMetric(Tfinal, 'MCS (surrogate)', 'Bias_vs_Pf_ref', 'superestima');
 end
 
 function createBaseInputs(rootDir)
@@ -102,11 +114,21 @@ end
 
 function assertMetric(T, methodName, columnName, expectedValue)
 idx = strcmp(string(T.Method), string(methodName));
-assert(any(idx), 'Metodo nao encontrado: %s', methodName);
+assert(any(idx), 'Método não encontrado: %s', methodName);
 
 actualValue = T.(columnName)(find(idx, 1, 'first'));
 assert(abs(actualValue - expectedValue) < 1e-12, ...
     'Valor inesperado para %s / %s: %.15g ~= %.15g', ...
+    methodName, columnName, actualValue, expectedValue);
+end
+
+function assertTextMetric(T, methodName, columnName, expectedValue)
+idx = strcmp(string(T.Method), string(methodName));
+assert(any(idx), 'Método não encontrado: %s', methodName);
+
+actualValue = string(T.(columnName)(find(idx, 1, 'first')));
+assert(actualValue == string(expectedValue), ...
+    'Texto inesperado para %s / %s: %s ~= %s', ...
     methodName, columnName, actualValue, expectedValue);
 end
 
