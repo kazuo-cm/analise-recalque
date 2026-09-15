@@ -176,7 +176,11 @@ switch method
         pair = parseVariablePair(opts.variablePair, subsetLevels.varNames);
         for i = 1:numel(levelsOut)
             Xi = subsetLevels.levels(i).samplesX;
-            levelsOut(i).samples2D = Xi(:, pair);
+            if pair(1) == pair(2)
+                levelsOut(i).samples2D = [Xi(:, pair(1)), zeros(size(Xi, 1), 1)];
+            else
+                levelsOut(i).samples2D = Xi(:, pair);
+            end
         end
         axisNames = string(subsetLevels.varNames(pair));
         basisLabel = sprintf('%s vs %s', axisNames(1), axisNames(2));
@@ -200,12 +204,10 @@ end
 end
 
 function [xGrid, yGrid, gGrid] = buildFailureContour(levelsOut, gridSize)
-zAll = [];
-gAll = [];
-for i = 1:numel(levelsOut)
-    zAll = [zAll; levelsOut(i).samples2D]; %#ok<AGROW>
-    gAll = [gAll; levelsOut(i).g(:)]; %#ok<AGROW>
-end
+zCells = arrayfun(@(lvl) lvl.samples2D, levelsOut, 'UniformOutput', false);
+gCells = arrayfun(@(lvl) lvl.g(:), levelsOut, 'UniformOutput', false);
+zAll = vertcat(zCells{:});
+gAll = vertcat(gCells{:});
 
 if size(zAll, 1) < 3 || numel(unique(zAll(:, 1))) < 2 || numel(unique(zAll(:, 2))) < 2
     xGrid = [];

@@ -339,12 +339,10 @@ end
 end
 
 function scores = estimateVariableInfluence(levelRecords, nVars)
-allX = [];
-allG = [];
-for i = 1:numel(levelRecords)
-    allX = [allX; levelRecords(i).samplesX]; %#ok<AGROW>
-    allG = [allG; levelRecords(i).g(:)]; %#ok<AGROW>
-end
+sampleCells = arrayfun(@(lvl) lvl.samplesX, levelRecords, 'UniformOutput', false);
+gCells = arrayfun(@(lvl) lvl.g(:), levelRecords, 'UniformOutput', false);
+allX = vertcat(sampleCells{:});
+allG = vertcat(gCells{:});
 
 scores = zeros(1, nVars);
 for j = 1:nVars
