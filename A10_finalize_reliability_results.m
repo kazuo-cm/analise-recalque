@@ -2,14 +2,14 @@ function out = A10_finalize_reliability_results(work_dir)
 % A10_FINALIZE_RELIABILITY_RESULTS
 % Consolida os resultados finais de confiabilidade para uso em dissertação.
 %
-% Entradas esperadas do workflow:
-%   - outputs_a5/A5_pf_comparison_summary.csv
-%   - outputs_a5/A5_pf_comparison_report.txt (opcional)
-%   - pf_compare_form_mcs.csv
-%   - summary_stage0.csv
-%   - out_incremental/stage4_report.csv
-%   - out_incremental/stage4_al_history.csv
-%   - out_incremental/A9_subset_simulation_result.mat
+% Entradas esperadas do workflow (busca por precedencia):
+%   - A5_pf_comparison_summary.csv      : outputs_a5 -> out_incremental -> work_dir
+%   - A5_pf_comparison_report.txt       : outputs_a5 -> out_incremental -> work_dir (opcional)
+%   - pf_compare_form_mcs.csv           : out_incremental -> outputs_a5 -> work_dir
+%   - summary_stage0.csv                : out_incremental -> outputs_a5 -> work_dir
+%   - stage4_report.csv                 : out_incremental -> outputs_a5 -> work_dir
+%   - stage4_al_history.csv             : out_incremental -> outputs_a5 -> work_dir
+%   - A9_subset_simulation_result.mat   : out_incremental -> outputs_a5 -> work_dir
 %
 % Saídas:
 %   - out_incremental/final_reliability_summary.csv

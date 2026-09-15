@@ -179,7 +179,7 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
     end
 
     Pf = (p0 ^ nIntermediate) * pLast;
-    Pf = max(min(Pf, 1 - 1e-15), 1e-15);
+    Pf = max(min(Pf, 1 - 1e-15), 0);
     beta = local_beta_from_pf(Pf);
 
     if nIntermediate == 0

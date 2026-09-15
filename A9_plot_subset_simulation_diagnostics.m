@@ -15,9 +15,19 @@ function out = A9_plot_subset_simulation_diagnostics(opts)
         opts = struct();
     end
 
-    work_dir = local_resolve_work_dir();
-    out_dir = fullfile(work_dir, 'out_incremental');
-    in_mat = fullfile(out_dir, 'A9_subset_simulation_result.mat');
+    if isfield(opts, 'in_mat') && ~isempty(opts.in_mat)
+        in_mat = opts.in_mat;
+        [out_dir, ~, ~] = fileparts(in_mat);
+        work_dir = fileparts(out_dir);
+    else
+        if isfield(opts, 'work_dir') && ~isempty(opts.work_dir)
+            work_dir = opts.work_dir;
+        else
+            work_dir = local_resolve_work_dir();
+        end
+        out_dir = fullfile(work_dir, 'out_incremental');
+        in_mat = fullfile(out_dir, 'A9_subset_simulation_result.mat');
+    end
 
     if ~isfile(in_mat)
         error('A9_plot_subset_simulation_diagnostics:MissingResult', ...
