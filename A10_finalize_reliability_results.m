@@ -398,7 +398,8 @@ end
 
 function filePath = locateRequiredFile(fileName, candidateDirs)
 filePath = locateOptionalFile(fileName, candidateDirs);
-assert(~isempty(filePath), 'Arquivo nao encontrado: %s', fileName);
+assert(~isempty(filePath), 'Arquivo nao encontrado: %s (locais verificados: %s)', ...
+    fileName, strjoin(candidateDirs, ', '));
 end
 
 function filePath = locateOptionalFile(fileName, candidateDirs)

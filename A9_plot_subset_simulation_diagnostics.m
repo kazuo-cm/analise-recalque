@@ -74,7 +74,14 @@ function out = A9_plot_subset_simulation_diagnostics(opts)
         end
     end
 
-    [hasContour, contourMsg] = local_plot_failure_contour(ax, ZLevels, gLevels, opts);
+    if strcmpi(projInfo.mode, 'xg')
+        yline(ax, 0, 'r-', 'LineWidth', opts.lineWidth, ...
+            'DisplayName', 'Fronteira de falha exata (g = 0)');
+        hasContour = true;
+        contourMsg = '';
+    else
+        [hasContour, contourMsg] = local_plot_failure_contour(ax, ZLevels, gLevels, opts);
+    end
     if hasContour
         contourLine = findobj(ax, 'Tag', 'failureContour');
         if ~isempty(contourLine)
