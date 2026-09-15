@@ -16,8 +16,17 @@ cleanupObj = onCleanup(@() cleanupFolder(rootDir)); %#ok<NASGU>
 createBaseInputs(rootDir);
 
 Tcompare = table( ...
-    0.11, 1.2265, 0.12, 0.08, 0.003, ...
-    'VariableNames', {'Pf_FORM','beta_FORM','Pf_MCS_surrogate','CoV_MCS','Error_MCS'});
+    string({'FORM'; 'MCS surrogate'}), ...
+    [0.91; 0.92], ...
+    [9.1; 9.2], ...
+    [0.91; 0.92], ...
+    [0.091; 0.092], ...
+    [0.11; NaN], ...
+    [1.2265; NaN], ...
+    [NaN; 0.12], ...
+    [NaN; 0.08], ...
+    [NaN; 0.003], ...
+    'VariableNames', {'Method','Pf','beta','CoV','Error','Pf_FORM','beta_FORM','Pf_MCS_surrogate','CoV_MCS','Error_MCS'});
 writeCompareFile(rootDir, Tcompare);
 
 out = A10_finalize_reliability_results(rootDir); %#ok<NASGU>
@@ -25,6 +34,9 @@ Tfinal = readtable(fullfile(rootDir, 'out_incremental', 'final_reliability_summa
 
 assert(ismember('CoV_Pf', Tfinal.Properties.VariableNames));
 assert(ismember('Error_or_StdError', Tfinal.Properties.VariableNames));
+assertMetric(Tfinal, 'RS2 empírico', 'AbsError_vs_Pf_ref', 0.0);
+assertMetric(Tfinal, 'RS2 empírico', 'RelErrorPct_vs_Pf_ref', 0.0);
+assertTextMetric(Tfinal, 'RS2 empírico', 'Bias_vs_Pf_ref', 'coincidente');
 assertNaNMetric(Tfinal, 'Pf_ref', 'AbsError_vs_Pf_ref');
 assertNaNMetric(Tfinal, 'Pf_ref', 'RelErrorPct_vs_Pf_ref');
 assertTextMetric(Tfinal, 'Pf_ref', 'Bias_vs_Pf_ref', 'referência');
@@ -59,6 +71,9 @@ out = A10_finalize_reliability_results(rootDir); %#ok<NASGU>
 Tfinal = readtable(fullfile(rootDir, 'out_incremental', 'final_reliability_summary.csv'));
 
 assertMetric(Tfinal, 'FORM (surrogate)', 'Pf', 0.105);
+assertMetric(Tfinal, 'RS2 empírico', 'AbsError_vs_Pf_ref', 0.0);
+assertMetric(Tfinal, 'RS2 empírico', 'RelErrorPct_vs_Pf_ref', 0.0);
+assertTextMetric(Tfinal, 'RS2 empírico', 'Bias_vs_Pf_ref', 'coincidente');
 assertNaNMetric(Tfinal, 'Pf_ref', 'AbsError_vs_Pf_ref');
 assertNaNMetric(Tfinal, 'Pf_ref', 'RelErrorPct_vs_Pf_ref');
 assertTextMetric(Tfinal, 'Pf_ref', 'Bias_vs_Pf_ref', 'referência');

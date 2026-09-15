@@ -171,7 +171,15 @@ for i = 2:numel(Method)
         continue;
     end
     AbsErrorPfRef(i) = abs(Pf(i) - Pf_ref);
-    RelErrorPctPfRef(i) = 100 * safeDivide(AbsErrorPfRef(i), Pf_ref);
+    if abs(Pf_ref) < eps
+        if AbsErrorPfRef(i) < eps
+            RelErrorPctPfRef(i) = 0;
+        else
+            RelErrorPctPfRef(i) = Inf;
+        end
+    else
+        RelErrorPctPfRef(i) = 100 * safeDivide(AbsErrorPfRef(i), Pf_ref);
+    end
     RelDirection(i) = classifyRelativeBias(Pf(i), Pf_ref);
 end
 
@@ -306,8 +314,11 @@ exportgraphics(f, f_out_png, 'Resolution', dpi);
 
 %% Text report
 fid = fopen(f_out_txt, 'w');
-assert(fid > 0, 'Nao foi possivel criar: %s', f_out_txt);
+if fid <= 0
+    error('Nao foi possivel criar o relatorio final: %s', f_out_txt);
+end
 cleanupObj = onCleanup(@() safeCloseFile(fid)); %#ok<NASGU>
+methodWidth = max(32, max(strlength(Tfinal.Method)) + 2);
 
 fprintf(fid, 'RELATORIO FINAL DE CONFIABILIDADE\n');
 fprintf(fid, '=================================\n\n');
@@ -322,11 +333,11 @@ fprintf(fid, '   Stage 4 history : %s\n', f_stage4_hist);
 fprintf(fid, '   A9 result       : %s\n\n', f_a9_result);
 
 fprintf(fid, '2) Comparacao final principal (referencia = Pf_ref)\n');
-fprintf(fid, '   %-32s %12s %12s %12s %12s %14s %14s\n', 'Metodo', 'Pf', 'beta', 'CoV', 'Err/SE', '|erro abs|', 'erro rel [%]');
-fprintf(fid, '   %s\n', repmat('-',1,118));
+fprintf(fid, '   %-*s %12s %12s %12s %12s %14s %14s\n', methodWidth, 'Metodo', 'Pf', 'beta', 'CoV', 'Err/SE', '|erro abs|', 'erro rel [%]');
+fprintf(fid, '   %s\n', repmat('-',1, methodWidth + 79));
 for i = 1:height(Tfinal)
-    fprintf(fid, '   %-32s %12.6g %12.6f %12.6g %12.6g %14.6g %14.3f\n', ...
-        char(Tfinal.Method(i)), Tfinal.Pf(i), Tfinal.beta(i), Tfinal.CoV_Pf(i), Tfinal.Error_or_StdError(i), ...
+    fprintf(fid, '   %-*s %12.6g %12.6f %12.6g %12.6g %14.6g %14.3f\n', ...
+        methodWidth, char(Tfinal.Method(i)), Tfinal.Pf(i), Tfinal.beta(i), Tfinal.CoV_Pf(i), Tfinal.Error_or_StdError(i), ...
         Tfinal.AbsError_vs_Pf_ref(i), Tfinal.RelErrorPct_vs_Pf_ref(i));
 end
 fprintf(fid, '\n');
@@ -678,9 +689,9 @@ end
 end
 
 function plotComparisonBars(labels, values, colorRGB)
-x = categorical(cellstr(labels));
-x = reordercats(x, cellstr(labels));
+x = 1:numel(values);
 bar(x, values, 'FaceColor', colorRGB);
+set(gca, 'XTick', x, 'XTickLabel', cellstr(labels));
 grid on;
 xtickangle(25);
 end
