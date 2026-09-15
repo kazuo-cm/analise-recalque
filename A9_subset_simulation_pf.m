@@ -133,8 +133,8 @@ if ~isfolder(opts.outDir)
     mkdir(opts.outDir);
 end
 
-save(outSS.resultFile, 'outSS');
-save(outSS.levelsFile, 'subsetLevels');
+save(outSS.resultFile, 'outSS', '-v7.3');
+save(outSS.levelsFile, 'subsetLevels', '-v7.3');
 end
 
 function opts = applyDefaults(opts)
