@@ -328,9 +328,15 @@ fprintf(fid, '2) Comparacao final principal (referencia = Pf_ref)\n');
 fprintf(fid, '   %-*s %12s %12s %12s %12s %14s %14s %14s\n', methodWidth, 'Metodo', 'Pf', 'beta', 'CoV', 'Err/SE', '|erro abs|', 'erro rel [%]', 'bias');
 fprintf(fid, '   %s\n', repmat('-',1, methodWidth + 94));
 for i = 1:height(Tfinal)
-    fprintf(fid, '   %-*s %12.6g %12.6f %12.6g %12.6g %14.6g %14.3f %14s\n', ...
-        methodWidth, char(Tfinal.Method(i)), Tfinal.Pf(i), Tfinal.beta(i), Tfinal.CoV_Pf(i), Tfinal.Error_or_StdError(i), ...
-        Tfinal.AbsError_vs_Pf_ref(i), Tfinal.RelErrorPct_vs_Pf_ref(i), char(string(Tfinal.Bias_vs_Pf_ref(i))));
+    fprintf(fid, '   %-*s %12s %12s %12s %12s %14s %14s %14s\n', ...
+        methodWidth, char(Tfinal.Method(i)), ...
+        formatNumber(Tfinal.Pf(i), '%.6g'), ...
+        formatNumber(Tfinal.beta(i), '%.6f'), ...
+        formatNumber(Tfinal.CoV_Pf(i), '%.6g'), ...
+        formatNumber(Tfinal.Error_or_StdError(i), '%.6g'), ...
+        formatNumber(Tfinal.AbsError_vs_Pf_ref(i), '%.6g'), ...
+        formatNumber(Tfinal.RelErrorPct_vs_Pf_ref(i), '%.3f'), ...
+        char(string(Tfinal.Bias_vs_Pf_ref(i))));
 end
 fprintf(fid, '\n');
 
@@ -637,12 +643,11 @@ end
 
 function ratio = safeDivide(a, b)
 ratio = NaN(size(a));
+validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
 if isscalar(b)
-    validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
     ratio(validMask) = a(validMask) ./ b;
     return;
 end
-validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
 ratio(validMask) = a(validMask) ./ b(validMask);
 end
 
@@ -748,6 +753,24 @@ if isnumeric(value)
     end
 else
     out = char(string(value));
+end
+end
+
+function out = formatNumber(value, fmt)
+if nargin < 2
+    fmt = '%.6g';
+end
+
+if isnan(value)
+    out = 'NaN';
+elseif isinf(value)
+    if value > 0
+        out = 'Inf';
+    else
+        out = '-Inf';
+    end
+else
+    out = sprintf(fmt, value);
 end
 end
 
