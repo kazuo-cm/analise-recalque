@@ -43,7 +43,7 @@ opts = applyPlotDefaults(opts);
 
 S = load(opts.levelsFile, 'subsetLevels');
 subsetLevels = S.subsetLevels;
-[projectedLevels, axisNames, basisLabel] = resolveProjectedLevels(subsetLevels, opts);
+[projectedLevels, axisNames, basisLabel, basisMethod] = resolveProjectedLevels(subsetLevels, opts);
 
 fig = figure('Color', opts.backgroundColor, 'Name', 'Subset Simulation diagnostics');
 ax = axes(fig);
@@ -76,12 +76,17 @@ end
 finiteMask = isfinite(gGrid);
 if ~isempty(gGrid) && any(finiteMask(:)) ...
         && any(gGrid(finiteMask) <= 0) && any(gGrid(finiteMask) > 0)
+    if strcmpi(basisMethod, 'pca')
+        contourLabel = 'Projected zero-level estimate';
+    else
+        contourLabel = 'Failure boundary  g(x)=0';
+    end
     contourHandle = contour(ax, xGrid, yGrid, gGrid, [0 0], ...
         'Color', [0.85 0.10 0.10], ...
         'LineWidth', opts.lineWidth, ...
-        'DisplayName', 'g(x)=0');
+        'DisplayName', contourLabel);
     legendHandles(subsetLevels.levelCount + 1) = contourHandle;
-    legendLabels(subsetLevels.levelCount + 1) = "Failure boundary  g(x)=0";
+    legendLabels(subsetLevels.levelCount + 1) = string(contourLabel);
 end
 
 xlabel(ax, axisNames(1), 'FontName', opts.fontName, 'FontSize', opts.labelFontSize);
@@ -102,7 +107,7 @@ legend(ax, legendHandles(legendIdx), legendLabels(legendIdx), ...
 annotation(fig, 'textbox', [0.12 0.01 0.76 0.08], ...
     'String', ['Interpretation: each cloud SS-k shows where the algorithm sampled at level k. ' ...
                'As k increases, the samples move toward the rare-event region, and the red contour ' ...
-               'represents the estimated failure boundary g(x)=0 in the displayed 2D basis.'], ...
+               contourExplanation(basisMethod)], ...
     'EdgeColor', 'none', ...
     'HorizontalAlignment', 'center', ...
     'FontName', opts.fontName, ...
@@ -167,7 +172,7 @@ if ~isfield(opts, 'gridSize') || isempty(opts.gridSize)
 end
 end
 
-function [levelsOut, axisNames, basisLabel] = resolveProjectedLevels(subsetLevels, opts)
+function [levelsOut, axisNames, basisLabel, basisMethod] = resolveProjectedLevels(subsetLevels, opts)
 levelsOut = subsetLevels.levels;
 method = lower(string(opts.projectionMethod));
 
@@ -178,6 +183,7 @@ switch method
         end
         axisNames = string(subsetLevels.plotBasis.varNames(:));
         basisLabel = subsetLevels.plotBasis.label;
+        basisMethod = char(subsetLevels.plotBasis.method);
     case "pair"
         pair = parseVariablePair(opts.variablePair, subsetLevels.varNames);
         for i = 1:numel(levelsOut)
@@ -190,6 +196,7 @@ switch method
         end
         axisNames = string(subsetLevels.varNames(pair));
         basisLabel = sprintf('%s vs %s', axisNames(1), axisNames(2));
+        basisMethod = 'pair';
     case "pca"
         [coeff, mu, sigma] = computePcaBasis(subsetLevels);
         for i = 1:numel(levelsOut)
@@ -203,9 +210,18 @@ switch method
         end
         axisNames = ["PC1"; "PC2"];
         basisLabel = 'PCA projection (PC1 vs PC2)';
+        basisMethod = 'pca';
     otherwise
         error('A9_plot_subset_simulation_diagnostics:InvalidProjection', ...
             'projectionMethod must be auto, pair or pca.');
+end
+end
+
+function txt = contourExplanation(basisMethod)
+if strcmpi(basisMethod, 'pca')
+    txt = 'shows a projected zero-level estimate in the displayed PCA basis.';
+else
+    txt = 'represents the estimated failure boundary g(x)=0 in the displayed 2D basis.';
 end
 end
 

@@ -128,7 +128,11 @@ levelRecords(finalLevel) = makeLevelRecord( ...
 pfLast = mean(levelRecords(finalLevel).g <= 0);
 Pf = (p0Eff ^ max(finalLevel - 1, 0)) * pfLast;
 beta = pf2beta(Pf);
-CoV = subsetSimulationCoV(p0Eff, nPerLevel, finalLevel, pfLast);
+if finalLevel == 1
+    CoV = sqrt((1 - Pf) / max(nPerLevel * max(Pf, eps), eps));
+else
+    CoV = subsetSimulationCoV(p0Eff, nPerLevel, finalLevel, pfLast);
+end
 
 subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff);
 subsetLevels = attachStored2DBasis(subsetLevels, opts);
@@ -253,6 +257,11 @@ for i = 1:nSeeds
             xProp = xCurr + proposalSigma .* randn(1, nVars);
             gProp = evaluateLimitState(gfun, xProp);
             if gProp <= threshold
+                alpha = min(1, exp(-0.5 * (sum(xProp.^2) - sum(xCurr.^2))));
+            else
+                alpha = 0;
+            end
+            if rand() <= alpha
                 xCurr = xProp;
                 gCurr = gProp;
                 accepted(cursor) = true;
@@ -276,6 +285,7 @@ meta.accepted = accepted;
 meta.isSeed = isSeed;
 meta.thresholdUsed = threshold;
 meta.proposalSigma = proposalSigma;
+meta.acceptanceRule = 'standard_normal_metropolis_with_subset_constraint';
 end
 
 function level = emptyLevelRecord(nVars)
