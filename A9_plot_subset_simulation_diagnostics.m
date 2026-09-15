@@ -347,10 +347,12 @@ function [ok, msg] = local_plot_failure_contour(ax, ZLevels, gLevels, opts)
         if all(~isfinite(GG(:)))
             return;
         end
-        [~, h] = contour(ax, XX, YY, GG, [0 0], 'r-', 'LineWidth', opts.lineWidth);
-        set(h, 'Tag', 'failureContour');
-        ok = true;
-        msg = '';
+        [C, h] = contour(ax, XX, YY, GG, [0 0], 'r-', 'LineWidth', opts.lineWidth);
+        if ~isempty(C) && size(C, 2) >= 2
+            set(h, 'Tag', 'failureContour');
+            ok = true;
+            msg = '';
+        end
     catch
         ok = false;
     end

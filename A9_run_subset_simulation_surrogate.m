@@ -52,6 +52,11 @@ function outSS = A9_run_subset_simulation_surrogate(opts)
     else
         vars_train = arrayfun(@(k) sprintf('X%d', k), 1:M, 'UniformOutput', false);
     end
+    if numel(vars_train) ~= M
+        error('A9_run_subset_simulation_surrogate:DimensionMismatch', ...
+            ['myInput possui %d marginais, mas stage3 indica %d variaveis de entrada. ' ...
+             'Verifique opts.myInput ou opts.muX/opts.sigmaX.'], M, numel(vars_train));
+    end
 
     if isfield(S, 'Xtr') && ~isempty(S.Xtr) && size(S.Xtr, 2) ~= M
         error('A9_run_subset_simulation_surrogate:DimensionMismatch', ...

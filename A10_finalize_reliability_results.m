@@ -681,6 +681,14 @@ if isnan(pf)
     x = NaN;
     return;
 end
+if pf <= 0
+    x = Inf;
+    return;
+end
+if pf >= 1
+    x = -Inf;
+    return;
+end
 epsv = 1e-15;
 pf = min(max(pf, epsv), 1 - epsv);
 x = -norminv(pf);
