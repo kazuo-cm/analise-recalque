@@ -172,6 +172,14 @@ function X = local_u2x_gauss(U, myInput)
     end
     X = zeros(N, M);
     for k = 1:M
+        if isfield(myInput.Marginals(k), 'Type') && ~isempty(myInput.Marginals(k).Type)
+            thisType = lower(string(myInput.Marginals(k).Type));
+            if ~(thisType == "gaussian" || thisType == "normal")
+                error('A9_subset_simulation_pf:UnsupportedMarginal', ...
+                    'Marginal %d do tipo %s nao eh suportada por esta implementacao gaussiana.', ...
+                    k, char(thisType));
+            end
+        end
         params = myInput.Marginals(k).Parameters;
         if numel(params) < 2
             error('A9_subset_simulation_pf:InvalidMarginal', ...

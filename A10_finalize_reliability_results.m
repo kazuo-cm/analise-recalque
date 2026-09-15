@@ -572,11 +572,7 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     end
 
     if strlength(string(txtA5)) > 0
-        txtPublico = local_sanitize_user_text(txtA5);
-        if ~isempty(txtPublico)
-            fprintf(fid, '\nResumo textual consolidado:\n');
-            fprintf(fid, '%s\n', txtPublico);
-        end
+        fprintf(fid, '\nResumo textual previo considerado na consolidacao final.\n');
     end
 
     if ~isempty(missing)
@@ -587,13 +583,6 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     end
 
     clear cleaner;
-end
-
-function txt = local_sanitize_user_text(txt)
-    txt = regexprep(char(txt), '(?i)\<(?:A[\s\\-_]*\d+|stage[\s\\-_]*\d+)[\s\\-_]*[A-Za-z0-9_\\-]*\>[\\s:;,\\)\\]\\-_./]*', ' ');
-    txt = regexprep(txt, '[ ]{2,}', ' ');
-    txt = regexprep(txt, '[ ]+([,.;:])', '$1');
-    txt = strtrim(txt);
 end
 
 function local_make_figure(pathFile, T_final, T_hist)
@@ -794,12 +783,6 @@ function work_dir = local_resolve_work_dir()
         if isempty(base) || ~isfolder(base)
             continue;
         end
-
-        function local_close_figure(fig)
-            if ~isempty(fig) && isgraphics(fig)
-                close(fig);
-            end
-        end
         outDir = fullfile(base, 'out_incremental');
         if isfolder(outDir)
             work_dir = base;
@@ -815,4 +798,10 @@ function work_dir = local_resolve_work_dir()
 
     error('A10_finalize_reliability_results:WorkDirNotFound', ...
         'Nao foi possivel localizar o diretorio do workflow.');
+end
+
+function local_close_figure(fig)
+    if ~isempty(fig) && isgraphics(fig)
+        close(fig);
+    end
 end
