@@ -88,7 +88,7 @@ function out = A10_finalize_reliability_results()
     final_png = fullfile(out_dir, 'final_reliability_comparison.png');
 
     writetable(T_public, final_csv);
-    local_write_report(final_txt, T_final, T_stage4, T_hist, txtA5, missing, outSS, T_sobol, T_sobol_sel);
+    local_write_report(final_txt, T_final, T_stage4, T_hist, missing, outSS, T_sobol, T_sobol_sel);
     local_make_figure(final_png, T_final, T_hist);
 
     stage4_status = local_find_status(T_stage4);
@@ -114,6 +114,7 @@ function out = A10_finalize_reliability_results()
     out.paths = struct('csv', final_csv, 'report', final_txt, 'figure', final_png);
     out.stage4_status = stage4_status;
     out.missing = missing;
+    out.has_prior_text_report = strlength(string(txtA5)) > 0;
 end
 
 function row = local_build_rs2_row(T_a5, T_stage0)
@@ -535,7 +536,7 @@ function strs = local_column_strings(data)
     strs = string(data(:));
 end
 
-function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing, outSS, T_sobol, T_sobol_sel)
+function local_write_report(pathFile, T_final, T_stage4, T_hist, missing, outSS, T_sobol, T_sobol_sel)
     fid = fopen(pathFile, 'w');
     if fid < 0
         error('A10_finalize_reliability_results:WriteFailed', ...
@@ -586,10 +587,6 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     end
     if ~isempty(T_sobol_sel)
         fprintf(fid, 'Selecao acumulada por ST>=0.99 disponivel.\n');
-    end
-
-    if strlength(string(txtA5)) > 0
-        fprintf(fid, '\nResumo textual previo considerado na consolidacao final.\n');
     end
 
     if ~isempty(missing)
