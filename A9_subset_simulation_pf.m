@@ -37,6 +37,7 @@ function outSS = A9_subset_simulation_pf(gfun, sampleFcn, opts)
 %                           .method = 'auto' | 'pair' | 'pca'
 %                           .variablePair = [i j] or {'x1','x2'}
 %   opts.assumeStandardNormalBaseSpace : keep true for the built-in kernel
+%   opts.saveDiagnostics  : true by default; set false to keep numeric-only behavior
 %
 % The saved diagnostics are intentionally self-contained so A10 can ignore
 % them unless a later consolidation step wants to reference the file path.
@@ -137,9 +138,6 @@ else
     CoV = subsetSimulationCoV(p0Eff, nPerLevel, finalLevel, pfLast);
 end
 
-subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff);
-subsetLevels = attachStored2DBasis(subsetLevels, opts);
-
 outSS = struct();
 outSS.Pf = Pf;
 outSS.beta = beta;
@@ -150,14 +148,22 @@ outSS.p0Requested = opts.p0;
 outSS.thresholds = thresholds;
 outSS.levelsFile = fullfile(opts.outDir, 'A9_subset_simulation_levels.mat');
 outSS.resultFile = fullfile(opts.outDir, 'A9_subset_simulation_result.mat');
-outSS.diagnosticBasis = subsetLevels.plotBasis;
+outSS.diagnosticBasis = struct();
 
 if ~isfolder(opts.outDir)
     mkdir(opts.outDir);
 end
 
 save(outSS.resultFile, 'outSS', '-v7.3');
-save(outSS.levelsFile, 'subsetLevels', '-v7.3');
+if opts.saveDiagnostics
+    subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff);
+    subsetLevels = attachStored2DBasis(subsetLevels, opts);
+    outSS.diagnosticBasis = subsetLevels.plotBasis;
+    save(outSS.resultFile, 'outSS', '-v7.3');
+    save(outSS.levelsFile, 'subsetLevels', '-v7.3');
+else
+    outSS.levelsFile = '';
+end
 end
 
 function opts = applyDefaults(opts)
@@ -181,6 +187,9 @@ if ~isfield(opts, 'plotBasis') || isempty(opts.plotBasis)
 end
 if ~isfield(opts, 'assumeStandardNormalBaseSpace') || isempty(opts.assumeStandardNormalBaseSpace)
     opts.assumeStandardNormalBaseSpace = true;
+end
+if ~isfield(opts, 'saveDiagnostics') || isempty(opts.saveDiagnostics)
+    opts.saveDiagnostics = true;
 end
 end
 
@@ -234,6 +243,10 @@ if isscalar(proposalSigma)
     proposalSigma = repmat(proposalSigma, 1, size(seedX, 2));
 end
 proposalSigma = reshape(proposalSigma, 1, []);
+if numel(proposalSigma) ~= size(seedX, 2)
+    error('A9_subset_simulation_pf:InvalidProposalSigma', ...
+        'opts.proposalSigma must be a scalar or have one value per variable.');
+end
 end
 
 function [Xnew, gnew, meta] = conditionalLevelSamples(gfun, seedX, seedG, threshold, nTarget, proposalSigma)

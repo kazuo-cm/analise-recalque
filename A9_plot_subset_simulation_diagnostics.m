@@ -178,12 +178,16 @@ method = lower(string(opts.projectionMethod));
 
 switch method
     case "auto"
-        for i = 1:numel(levelsOut)
-            levelsOut(i).samples2D = subsetLevels.levels(i).samples2D;
+        if hasStoredAutoProjection(subsetLevels)
+            for i = 1:numel(levelsOut)
+                levelsOut(i).samples2D = subsetLevels.levels(i).samples2D;
+            end
+            axisNames = string(subsetLevels.plotBasis.varNames(:));
+            basisLabel = subsetLevels.plotBasis.label;
+            basisMethod = char(subsetLevels.plotBasis.method);
+        else
+            [levelsOut, axisNames, basisLabel, basisMethod] = rebuildAutoProjection(levelsOut, subsetLevels);
         end
-        axisNames = string(subsetLevels.plotBasis.varNames(:));
-        basisLabel = subsetLevels.plotBasis.label;
-        basisMethod = char(subsetLevels.plotBasis.method);
     case "pair"
         pair = parseVariablePair(opts.variablePair, subsetLevels.varNames);
         for i = 1:numel(levelsOut)
@@ -223,6 +227,46 @@ if strcmpi(basisMethod, 'pca')
 else
     txt = 'represents the estimated failure boundary g(x)=0 in the displayed 2D basis.';
 end
+end
+
+function tf = hasStoredAutoProjection(subsetLevels)
+tf = isfield(subsetLevels, 'plotBasis') ...
+    && isstruct(subsetLevels.plotBasis) ...
+    && isfield(subsetLevels.plotBasis, 'method') ...
+    && isfield(subsetLevels.plotBasis, 'varNames') ...
+    && isfield(subsetLevels.plotBasis, 'label');
+if ~tf
+    return;
+end
+tf = all(arrayfun(@(lvl) isfield(lvl, 'samples2D') && size(lvl.samples2D, 2) == 2, subsetLevels.levels));
+end
+
+function [levelsOut, axisNames, basisLabel, basisMethod] = rebuildAutoProjection(levelsOut, subsetLevels)
+nVars = size(levelsOut(1).samplesX, 2);
+if isfield(subsetLevels, 'metadata') && isfield(subsetLevels.metadata, 'recommendedVariablePair')
+    pair = subsetLevels.metadata.recommendedVariablePair;
+elseif nVars == 1
+    pair = [1 1];
+else
+    pair = [1 2];
+end
+
+for i = 1:numel(levelsOut)
+    Xi = levelsOut(i).samplesX;
+    if pair(1) == pair(2)
+        levelsOut(i).samples2D = [Xi(:, pair(1)), zeros(size(Xi, 1), 1)];
+    else
+        levelsOut(i).samples2D = Xi(:, pair);
+    end
+end
+
+if pair(1) == pair(2)
+    axisNames = string(subsetLevels.varNames(pair));
+else
+    axisNames = string(subsetLevels.varNames(pair));
+end
+basisLabel = sprintf('%s vs %s', axisNames(1), axisNames(2));
+basisMethod = 'pair';
 end
 
 function [xGrid, yGrid, gGrid] = buildFailureContour(levelsOut, gridSize)
