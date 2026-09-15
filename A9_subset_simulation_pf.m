@@ -69,7 +69,6 @@ if ~opts.assumeStandardNormalBaseSpace
 end
 nPerLevel = opts.N;
 nSeeds = max(1, round(opts.p0 * nPerLevel));
-nPerChain = max(1, ceil(nPerLevel / nSeeds));
 p0Eff = nSeeds / nPerLevel;
 
 if abs(p0Eff - opts.p0) > 1e-12
@@ -102,13 +101,15 @@ for levelIdx = 1:opts.maxLevels
         finalLevel = levelIdx;
         finalX = X;
         finalG = g;
+        finalSeedIdx = seedIdx;
+        finalLevelMeta = levelMeta(levelIdx);
         break;
     end
 
     seedX = X(seedIdx, :);
     seedG = g(seedIdx);
     proposalSigma = resolveProposalSigma(opts, seedX);
-    [X, g, meta] = conditionalLevelSamples(gfun, seedX, seedG, threshold, nPerChain, nPerLevel, proposalSigma);
+    [X, g, meta] = conditionalLevelSamples(gfun, seedX, seedG, threshold, nPerLevel, proposalSigma);
     if levelIdx < opts.maxLevels
         levelMeta(levelIdx + 1) = meta;
     end
@@ -122,8 +123,10 @@ end
 
 levelRecords = levelRecords(1:finalLevel);
 thresholds = thresholds(1:finalLevel);
-levelRecords(finalLevel) = makeLevelRecord( ...
-    finalLevel, finalX, finalG, thresholds(finalLevel), levelRecords(finalLevel).seedIndex, levelRecords(finalLevel).generationMeta);
+if exist('finalSeedIdx', 'var')
+    levelRecords(finalLevel) = makeLevelRecord( ...
+        finalLevel, finalX, finalG, thresholds(finalLevel), finalSeedIdx, finalLevelMeta);
+end
 
 pfLast = mean(levelRecords(finalLevel).g <= 0);
 Pf = (p0Eff ^ max(finalLevel - 1, 0)) * pfLast;
@@ -233,10 +236,12 @@ end
 proposalSigma = reshape(proposalSigma, 1, []);
 end
 
-function [Xnew, gnew, meta] = conditionalLevelSamples(gfun, seedX, seedG, threshold, nPerChain, nTarget, proposalSigma)
+function [Xnew, gnew, meta] = conditionalLevelSamples(gfun, seedX, seedG, threshold, nTarget, proposalSigma)
 nSeeds = size(seedX, 1);
 nVars = size(seedX, 2);
-nAlloc = nSeeds * nPerChain;
+chainLengths = floor(nTarget / nSeeds) * ones(nSeeds, 1);
+chainLengths(1:mod(nTarget, nSeeds)) = chainLengths(1:mod(nTarget, nSeeds)) + 1;
+nAlloc = sum(chainLengths);
 
 Xnew = zeros(nAlloc, nVars);
 gnew = zeros(nAlloc, 1);
@@ -248,7 +253,7 @@ cursor = 0;
 for i = 1:nSeeds
     xCurr = seedX(i, :);
     gCurr = seedG(i);
-    for j = 1:nPerChain
+    for j = 1:chainLengths(i)
         cursor = cursor + 1;
         if j == 1
             isSeed(cursor) = true;
@@ -272,12 +277,6 @@ for i = 1:nSeeds
         chainId(cursor) = i;
     end
 end
-
-Xnew = Xnew(1:nTarget, :);
-gnew = gnew(1:nTarget);
-chainId = chainId(1:nTarget);
-accepted = accepted(1:nTarget);
-isSeed = isSeed(1:nTarget);
 
 meta = struct();
 meta.chainId = chainId;
