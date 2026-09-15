@@ -594,8 +594,9 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
 end
 
 function txt = local_sanitize_user_text(txt)
-    txt = regexprep(char(txt), '(?i)\<A6[A-Za-z0-9_\\-]*\>', '');
-    txt = regexprep(txt, '(^|[[:space:]])[_\\-]+([[:space:]]|$)', '$1$2');
+    txt = regexprep(char(txt), '(?i)\<A6[A-Za-z0-9_\\-]*\>[\\s:;,\\)\\]\\-_./]*', ' ');
+    txt = regexprep(txt, '[ ]{2,}', ' ');
+    txt = regexprep(txt, '[ ]+([,.;:])', '$1');
     txt = strtrim(txt);
 end
 

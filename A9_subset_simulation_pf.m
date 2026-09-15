@@ -121,17 +121,30 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
 
     nLevels = level;
     pLast = mean(g <= 0);
-    Pf = (p0 ^ max(nLevels - 1, 0)) * pLast;
+    nIntermediate = max(nLevels - 1, 0);
+    if ~failReached
+        nIntermediate = nLevels;
+    end
+
+    Pf = (p0 ^ nIntermediate) * pLast;
     Pf = max(min(Pf, 1 - 1e-15), 1e-15);
     beta = local_beta_from_pf(Pf);
-    if nLevels <= 1
-        if pLast > 0
-            CoV = sqrt(max(1 - pLast, 0) / (N * pLast));
-        else
-            CoV = NaN;
-        end
+
+    if pLast > 0
+        relVarLast = max(1 - pLast, 0) / (N * pLast);
     else
-        CoV = sqrt((1 - p0) / (N * p0) * (nLevels - 1));
+        relVarLast = NaN;
+    end
+
+    if nIntermediate == 0
+        CoV = sqrt(relVarLast);
+    else
+        relVarSubset = nIntermediate * (1 - p0) / (N * p0);
+        if isnan(relVarLast)
+            CoV = NaN;
+        else
+            CoV = sqrt(relVarSubset + relVarLast);
+        end
     end
 
     outSS = struct();
