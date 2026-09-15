@@ -198,6 +198,13 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
             'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
         return;
     end
+    if size(Xpca, 2) < 2 || rank(Xpca) < 2
+        idx = local_pick_most_influential_dims(Xall, gall);
+        [ZLevels, gLevels, labels, projInfo] = local_make_influential_projection(LD, idx(1:2), 'influential-fallback');
+        projInfo.description = sprintf(['PCA com dimensionalidade efetiva < 2, projeção de fallback ' ...
+            'nas variáveis X_%d e X_%d'], projInfo.variables(1), projInfo.variables(2));
+        return;
+    end
 
     [Xstd, mu, sg] = local_standardize(Xpca);
     [coeff, score] = pca(Xstd, 'NumComponents', 2);

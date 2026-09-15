@@ -688,11 +688,12 @@ end
 
 function ratio = safeDivide(a, b)
 ratio = NaN(size(a));
-validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
 if isscalar(b)
+    validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
     ratio(validMask) = a(validMask) ./ b;
     return;
 end
+validMask = isfinite(a) & isfinite(b) & abs(b) >= eps;
 ratio(validMask) = a(validMask) ./ b(validMask);
 end
 
