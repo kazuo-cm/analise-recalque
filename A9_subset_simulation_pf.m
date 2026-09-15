@@ -170,25 +170,24 @@ outSS.levelsFile = '';
 outSS.resultFile = '';
 outSS.diagnosticBasis = struct();
 
-if (opts.saveResult || opts.saveDiagnostics) && ~isfolder(opts.outDir)
-    mkdir(opts.outDir);
+if opts.saveResult || opts.saveDiagnostics
+    if ~isfolder(opts.outDir)
+        mkdir(opts.outDir);
+    end
 end
 
 resultFilePath = fullfile(opts.outDir, 'A9_subset_simulation_result.mat');
 levelsFilePath = fullfile(opts.outDir, 'A9_subset_simulation_levels.mat');
-if opts.saveResult
-    outSS.resultFile = resultFilePath;
-    save(resultFilePath, 'outSS', '-v7.3');
-end
 if opts.saveDiagnostics
     subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff);
     subsetLevels = attachStored2DBasis(subsetLevels, opts);
     outSS.diagnosticBasis = subsetLevels.plotBasis;
     outSS.levelsFile = levelsFilePath;
-    if opts.saveResult
-        save(resultFilePath, 'outSS', '-v7.3');
-    end
     save(levelsFilePath, 'subsetLevels', '-v7.3');
+end
+if opts.saveResult
+    outSS.resultFile = resultFilePath;
+    save(resultFilePath, 'outSS', '-v7.3');
 end
 end
 

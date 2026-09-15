@@ -73,8 +73,13 @@ for k = 1:subsetLevels.levelCount
         k, k, projectedLevels(k).threshold);
 end
 
-[xGrid, yGrid, gGrid] = buildFailureContour(projectedLevels, opts.gridSize);
-finiteMask = isfinite(gGrid);
+if drawBoundary
+    [xGrid, yGrid, gGrid] = buildFailureContour(projectedLevels, opts.gridSize);
+    finiteMask = isfinite(gGrid);
+else
+    gGrid = [];
+    finiteMask = false(0, 0);
+end
 if drawBoundary ...
         && ~isempty(gGrid) && any(finiteMask(:)) ...
         && any(gGrid(finiteMask) <= 0) && any(gGrid(finiteMask) > 0)
