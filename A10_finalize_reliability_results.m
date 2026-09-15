@@ -325,12 +325,12 @@ fprintf(fid, '   Stage 4 history : %s\n', f_stage4_hist);
 fprintf(fid, '   A9 result       : %s\n\n', f_a9_result);
 
 fprintf(fid, '2) Comparacao final principal (referencia = Pf_ref)\n');
-fprintf(fid, '   %-*s %12s %12s %12s %12s %14s %14s\n', methodWidth, 'Metodo', 'Pf', 'beta', 'CoV', 'Err/SE', '|erro abs|', 'erro rel [%]');
-fprintf(fid, '   %s\n', repmat('-',1, methodWidth + 79));
+fprintf(fid, '   %-*s %12s %12s %12s %12s %14s %14s %14s\n', methodWidth, 'Metodo', 'Pf', 'beta', 'CoV', 'Err/SE', '|erro abs|', 'erro rel [%]', 'bias');
+fprintf(fid, '   %s\n', repmat('-',1, methodWidth + 94));
 for i = 1:height(Tfinal)
-    fprintf(fid, '   %-*s %12.6g %12.6f %12.6g %12.6g %14.6g %14.3f\n', ...
+    fprintf(fid, '   %-*s %12.6g %12.6f %12.6g %12.6g %14.6g %14.3f %14s\n', ...
         methodWidth, char(Tfinal.Method(i)), Tfinal.Pf(i), Tfinal.beta(i), Tfinal.CoV_Pf(i), Tfinal.Error_or_StdError(i), ...
-        Tfinal.AbsError_vs_Pf_ref(i), Tfinal.RelErrorPct_vs_Pf_ref(i));
+        Tfinal.AbsError_vs_Pf_ref(i), Tfinal.RelErrorPct_vs_Pf_ref(i), char(string(Tfinal.Bias_vs_Pf_ref(i))));
 end
 fprintf(fid, '\n');
 
@@ -465,6 +465,21 @@ value = NaN;
 
 selectedColumn = findColumnName(T, wideCandidates);
 if ~isempty(selectedColumn)
+    methodCol = findColumnName(T, {'Method','method','Metodo','Label','Name'});
+    if ~isempty(methodCol)
+        methods = string(T.(methodCol));
+        targetMethods = normalizeTokens(rowMethodCandidates);
+        for i = 1:numel(methods)
+            methodName = normalizeOne(methods(i));
+            if any(strcmp(methodName, targetMethods))
+                value = firstNumericFromArray(T.(selectedColumn)(i));
+                if ~isnan(value)
+                    return;
+                end
+            end
+        end
+    end
+
     value = firstNumericFromArray(T.(selectedColumn));
     if ~isnan(value)
         return;
