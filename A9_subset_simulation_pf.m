@@ -38,6 +38,7 @@ function outSS = A9_subset_simulation_pf(gfun, sampleFcn, opts)
 %                           .variablePair = [i j] or {'x1','x2'}
 %   opts.assumeStandardNormalBaseSpace : keep true for the built-in kernel
 %   opts.saveDiagnostics  : true by default; set false to keep numeric-only behavior
+%   opts.saveResult       : true by default; set false to disable result MAT persistence
 %
 % The saved diagnostics are intentionally self-contained so A10 can ignore
 % them unless a later consolidation step wants to reference the file path.
@@ -150,16 +151,22 @@ outSS.levelsFile = fullfile(opts.outDir, 'A9_subset_simulation_levels.mat');
 outSS.resultFile = fullfile(opts.outDir, 'A9_subset_simulation_result.mat');
 outSS.diagnosticBasis = struct();
 
-if ~isfolder(opts.outDir)
+if (opts.saveResult || opts.saveDiagnostics) && ~isfolder(opts.outDir)
     mkdir(opts.outDir);
 end
 
-save(outSS.resultFile, 'outSS', '-v7.3');
+if opts.saveResult
+    save(outSS.resultFile, 'outSS', '-v7.3');
+else
+    outSS.resultFile = '';
+end
 if opts.saveDiagnostics
     subsetLevels = buildDiagnosticArtifact(levelRecords, thresholds, Pf, beta, CoV, opts, varNames, p0Eff);
     subsetLevels = attachStored2DBasis(subsetLevels, opts);
     outSS.diagnosticBasis = subsetLevels.plotBasis;
-    save(outSS.resultFile, 'outSS', '-v7.3');
+    if opts.saveResult
+        save(outSS.resultFile, 'outSS', '-v7.3');
+    end
     save(outSS.levelsFile, 'subsetLevels', '-v7.3');
 else
     outSS.levelsFile = '';
@@ -190,6 +197,9 @@ if ~isfield(opts, 'assumeStandardNormalBaseSpace') || isempty(opts.assumeStandar
 end
 if ~isfield(opts, 'saveDiagnostics') || isempty(opts.saveDiagnostics)
     opts.saveDiagnostics = true;
+end
+if ~isfield(opts, 'saveResult') || isempty(opts.saveResult)
+    opts.saveResult = true;
 end
 end
 
@@ -429,7 +439,19 @@ if nVars == 1
     return;
 end
 
-if method == "pair" || (method == "auto" && hasVariablePair(opts))
+if method == "pair"
+    if ~hasVariablePair(opts)
+        error('A9_subset_simulation_pf:MissingVariablePair', ...
+            'plotBasis.variablePair is required when plotBasis.method = ''pair''.');
+    end
+    variablePair = parseVariablePair(opts.plotBasis.variablePair, subsetLevels.varNames);
+    basis = struct('method', 'pair', 'variablePair', variablePair, ...
+        'varNames', subsetLevels.varNames(variablePair), ...
+        'label', sprintf('%s vs %s', subsetLevels.varNames(variablePair(1)), subsetLevels.varNames(variablePair(2))));
+    return;
+end
+
+if method == "auto" && hasVariablePair(opts)
     variablePair = parseVariablePair(opts.plotBasis.variablePair, subsetLevels.varNames);
     basis = struct('method', 'pair', 'variablePair', variablePair, ...
         'varNames', subsetLevels.varNames(variablePair), ...

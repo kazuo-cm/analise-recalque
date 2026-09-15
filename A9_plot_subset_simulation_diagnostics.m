@@ -46,7 +46,7 @@ subsetLevels = S.subsetLevels;
 [projectedLevels, axisNames, basisLabel, basisMethod] = resolveProjectedLevels(subsetLevels, opts);
 
 fig = figure('Color', opts.backgroundColor, 'Name', 'Subset Simulation diagnostics');
-ax = axes(fig);
+ax = axes('Parent', fig);
 hold(ax, 'on');
 grid(ax, 'on');
 box(ax, 'on');
