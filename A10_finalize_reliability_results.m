@@ -682,6 +682,7 @@ function local_plot_pf_history(T_hist)
     if plotted
         legend('Location', 'best');
     else
+        axis off;
         text(0.5, 0.5, 'Series Pf_hat/Pf_SS indisponiveis', 'Units', 'normalized', ...
             'HorizontalAlignment', 'center');
     end
@@ -702,6 +703,7 @@ function local_plot_quality_history(T_hist)
     hasR2 = any(isfinite(r2best));
     hasLoo = any(isfinite(loobest));
     maskIter = isfinite(iter);
+    hold on;
 
     if hasR2
         maskR2 = maskIter & isfinite(r2best);

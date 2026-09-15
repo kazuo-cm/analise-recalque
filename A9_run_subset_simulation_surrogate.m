@@ -90,7 +90,7 @@ end
 
 function g = local_gfun_surrogate(X, mdl, muY, sdY, recalque_lim)
     yN_hat = uq_evalModel(mdl, X);
-    y_hat = yN_hat * sdY + muY;
+    y_hat = bsxfun(@plus, bsxfun(@times, yN_hat, sdY), muY);
     g = recalque_lim - y_hat;
     g = g(:);
 end
