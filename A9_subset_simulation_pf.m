@@ -141,7 +141,7 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
         U = Unew(1:N, :);
         g = gnew(1:N);
         if recordDiagnostics
-            X = u2x(U);
+            X = u2x(Unew(1:N, :));
         end
     end
 

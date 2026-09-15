@@ -127,14 +127,21 @@ function [ZLevels, gLevels, labels, projInfo] = local_build_projection(outSS, op
     nLevels = numel(LD);
     M = size(LD(1).X, 2);
 
-    Xall = [];
-    gall = [];
+    Xcells = cell(nLevels, 1);
+    gcells = cell(nLevels, 1);
     for k = 1:nLevels
-        Xall = [Xall; LD(k).X]; %#ok<AGROW>
-        gall = [gall; LD(k).g(:)]; %#ok<AGROW>
+        Xcells{k} = LD(k).X;
+        gcells{k} = LD(k).g(:);
     end
+    Xall = vertcat(Xcells{:});
+    gall = vertcat(gcells{:});
 
     modeReq = lower(string(opts.projection));
+    supportedModes = ["auto","pca","influential"];
+    if ~any(modeReq == supportedModes)
+        error('A9_plot_subset_simulation_diagnostics:InvalidProjection', ...
+            'opts.projection="%s" invalido. Use: auto, influential ou pca.', char(modeReq));
+    end
     usePCA = false;
     if modeReq == "pca"
         usePCA = true;
@@ -264,12 +271,14 @@ function idx = local_pick_most_influential_dims(X, g)
 end
 
 function [ok, msg] = local_plot_failure_contour(ax, ZLevels, gLevels, opts)
-    Z = [];
-    g = [];
+    Zcells = cell(numel(ZLevels), 1);
+    gcells = cell(numel(gLevels), 1);
     for k = 1:numel(ZLevels)
-        Z = [Z; ZLevels{k}]; %#ok<AGROW>
-        g = [g; gLevels{k}(:)]; %#ok<AGROW>
+        Zcells{k} = ZLevels{k};
+        gcells{k} = gLevels{k}(:);
     end
+    Z = vertcat(Zcells{:});
+    g = vertcat(gcells{:});
     ok = false;
     msg = 'Fronteira g=0 indisponível: exibindo somente dispersão por níveis.';
 
