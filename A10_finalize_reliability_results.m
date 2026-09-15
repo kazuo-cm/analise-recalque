@@ -790,8 +790,8 @@ else
     relation = 'coincide com';
 end
 
-fprintf(fid, '   %-32s : Pf = %.6g, %s Pf_ref, |erro abs| = %.6g, erro rel = %.3f %%.\n', ...
-    methodName, pfValue, relation, absErr, relErr);
+fprintf(fid, '   %-32s : Pf = %s, %s Pf_ref, |erro abs| = %s, erro rel = %s %%.\n', ...
+    methodName, formatNumber(pfValue, '%.6g'), relation, formatNumber(absErr, '%.6g'), formatNumber(relErr, '%.3f'));
 end
 
 function safeCloseFile(fid)
