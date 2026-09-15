@@ -1,4 +1,4 @@
-function out = A10_finalize_reliability_results()
+function out = A10_finalize_reliability_results(work_dir)
 % A10_FINALIZE_RELIABILITY_RESULTS
 % Consolida os resultados finais de confiabilidade para uso em dissertação.
 %
@@ -18,8 +18,11 @@ function out = A10_finalize_reliability_results()
 
 clc;
 
+if nargin < 1 || isempty(work_dir)
+    work_dir = 'C:\Kazuo-Script';
+end
+
 %% Paths
-work_dir = 'C:\Kazuo-Script';
 out_dir  = fullfile(work_dir, 'out_incremental');
 a5_dir   = fullfile(work_dir, 'outputs_a5');
 
@@ -629,7 +632,8 @@ x = reordercats(x, cellstr(labels));
 bar(x, values, 'FaceColor', colorRGB);
 grid on;
 xtickangle(25);
-if any(values > 0) && max(values(~isnan(values))) / max(min(values(values > 0)), eps) > 100
+finiteVals = values(isfinite(values));
+if ~isempty(finiteVals) && all(finiteVals > 0) && max(finiteVals) / min(finiteVals) > 100
     set(gca, 'YScale', 'log');
 end
 end
