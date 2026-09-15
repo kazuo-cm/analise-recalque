@@ -527,7 +527,7 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     cleaner = onCleanup(@() fclose(fid));
 
     fprintf(fid, 'FINAL RELIABILITY REPORT\n');
-    fprintf(fid, 'Gerado em: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
+    fprintf(fid, 'Gerado em: %s\n\n', char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss')));
 
     fprintf(fid, 'Arquivos consultados:\n');
     names = fieldnames(paths);
@@ -594,7 +594,7 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
 end
 
 function txt = local_sanitize_user_text(txt)
-    txt = regexprep(char(txt), '(?i)\<A6[A-Za-z0-9_\\-]*\>[\\s:;,\\)\\]\\-_./]*', ' ');
+    txt = regexprep(char(txt), '(?i)\<A[\s\\-_]*6[\s\\-_]*[A-Za-z0-9_\\-]*\>[\\s:;,\\)\\]\\-_./]*', ' ');
     txt = regexprep(txt, '[ ]{2,}', ' ');
     txt = regexprep(txt, '[ ]+([,.;:])', '$1');
     txt = strtrim(txt);

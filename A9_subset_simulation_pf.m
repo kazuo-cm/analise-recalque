@@ -89,6 +89,11 @@ function outSS = A9_subset_simulation_pf(gfunX, myInput, opts)
             for t = 1:chainLen
                 up = uc + sProp * randn(1, M);
                 gp = gfunX(u2x(up));
+                gp = gp(:);
+                if numel(gp) ~= 1
+                    error('A9_subset_simulation_pf:InvalidResponse', ...
+                        'gfunX deve retornar um unico valor para cada amostra proposta.');
+                end
                 gp = gp(1);
 
                 if gp <= b
