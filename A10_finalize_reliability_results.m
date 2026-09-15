@@ -78,7 +78,7 @@ end
 if isnan(beta_form)
     beta_form = pf2beta(Pf_form);
 end
-[cov_form, colCovForm] = extractCompareMetric(Tcompare, {'CoV_FORM','cov_FORM','CoV_Pf_FORM'}, {'FORM'}, {'CoV','cov','StdErr','Error'});
+[cov_form, colCovForm] = extractCompareMetric(Tcompare, {'CoV_FORM','cov_FORM','CoV_Pf_FORM'}, {'FORM'}, {'CoV','cov'});
 [err_form, colErrForm] = extractCompareMetric(Tcompare, {'Error_FORM','StdErr_FORM','SE_FORM','AbsError_FORM'}, {'FORM'}, {'Error','StdErr','SE'});
 
 [Pf_mcs, colPfMcs] = extractCompareMetric( ...
@@ -94,7 +94,7 @@ end
     Tcompare, ...
     {'CoV_MCS','cov_MCS','CoV_Pf_MCS','CoV_surrogate_on_RS2','cov_surrogate_on_RS2','CoV_Pf_surrogate_on_RS2'}, ...
     {'MCS','Monte Carlo','surrogate'}, ...
-    {'CoV','cov','StdErr','Error'});
+    {'CoV','cov'});
 [err_mcs, colErrMcs] = extractCompareMetric( ...
     Tcompare, ...
     {'Error_MCS','StdErr_MCS','SE_MCS','AbsError_MCS','Error_surrogate_on_RS2'}, ...
@@ -553,8 +553,10 @@ end
 end
 
 function out = normalizeTokens(values)
-if ischar(values) || isstring(values)
-    values = cellstr(string(values));
+if isstring(values)
+    values = cellstr(values(:));
+elseif ischar(values)
+    values = {values};
 end
 out = cell(size(values));
 for i = 1:numel(values)
