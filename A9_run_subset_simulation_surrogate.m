@@ -17,7 +17,10 @@ function outSS = A9_run_subset_simulation_surrogate(opts)
     stage3_mat = fullfile(out_dir, 'stage3_best.mat');
     result_mat = fullfile(out_dir, 'A9_subset_simulation_result.mat');
 
-    assert(isfile(stage3_mat), 'Nao encontrado: %s', stage3_mat);
+    if ~isfile(stage3_mat)
+        error('A9_run_subset_simulation_surrogate:MissingStage3', ...
+            'Nao encontrado: %s', stage3_mat);
+    end
     if exist('uq_evalModel', 'file') ~= 2
         error('A9_run_subset_simulation_surrogate:UQLabMissing', ...
             'uq_evalModel nao encontrado. Inicialize o UQLab antes de rodar o A9.');

@@ -578,7 +578,7 @@ function local_write_report(pathFile, T_final, T_stage4, T_hist, txtA5, missing,
     if ~isempty(missing)
         fprintf(fid, '\nObservacao: parte dos insumos esperados nao estava disponivel, e a consolidacao utilizou apenas os resultados encontrados.\n');
         for i = 1:numel(missing)
-            fprintf(fid, ' - Insumo opcional ausente %d.\n', i);
+            fprintf(fid, ' - %s.\n', local_public_input_name(missing(i)));
         end
     end
 
@@ -648,12 +648,14 @@ function local_plot_pf_history(T_hist)
 
     hold on;
     plotted = false;
-    if any(isfinite(pfHat))
-        semilogy(iter, pfHat, '-o', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{hat}');
+    maskHat = isfinite(pfHat) & (pfHat > 0);
+    maskSS = isfinite(pfSS) & (pfSS > 0);
+    if any(maskHat)
+        semilogy(iter(maskHat), pfHat(maskHat), '-o', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{hat}');
         plotted = true;
     end
-    if any(isfinite(pfSS))
-        semilogy(iter, pfSS, '-s', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{SS}');
+    if any(maskSS)
+        semilogy(iter(maskSS), pfSS(maskSS), '-s', 'LineWidth', 1.4, 'MarkerSize', 5, 'DisplayName', 'Pf_{SS}');
         plotted = true;
     end
     grid on;
@@ -803,5 +805,32 @@ end
 function local_close_figure(fig)
     if ~isempty(fig) && isgraphics(fig)
         close(fig);
+    end
+end
+
+function label = local_public_input_name(pathValue)
+    [~, name, ext] = fileparts(char(pathValue));
+    fileName = [name ext];
+    switch fileName
+        case 'A5_pf_comparison_summary.csv'
+            label = 'resumo consolidado previo de comparacao de Pf';
+        case 'A5_pf_comparison_report.txt'
+            label = 'relatorio textual previo de comparacao de Pf';
+        case 'stage4_al_history.csv'
+            label = 'historico do aprendizado ativo';
+        case 'stage4_report.csv'
+            label = 'resumo final do aprendizado ativo';
+        case 'pf_compare_form_mcs.csv'
+            label = 'comparacao complementar FORM/MCS';
+        case 'summary_stage0.csv'
+            label = 'resumo de referencia da etapa inicial';
+        case 'A9_subset_simulation_result.mat'
+            label = 'resultado da Subset Simulation via surrogate';
+        case 'sobol_indices.csv'
+            label = 'indices de sensibilidade de Sobol';
+        case 'sobol_selected_cumST_99.csv'
+            label = 'selecao acumulada de Sobol por ST>=0.99';
+        otherwise
+            label = 'insumo complementar do workflow';
     end
 end
